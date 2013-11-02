@@ -49,7 +49,7 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			circleFixture.restitution = 0.7;
 
 			const bodyDef = new Box2D.Dynamics.b2BodyDef();
-			bodyDef.type = Box2D.Dynamics.b2Body.b2_staticBody;
+			bodyDef.type = Box2D.Dynamics.b2Body.b2_kinematicBody;
 
 			for (var i = 0; i < 40; i++) {
 				bodyDef.position.Set(MathUtil.rndRange(0, _g.STAGE_WIDTH) / _g.METER, -MathUtil.rndRange(50, 5000) / _g.METER);
@@ -93,15 +93,15 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			world.Step(1 / 60,  3,  3);
 			world.ClearForces();
 
-			// const n = _g.state.actors.length;
-			// for (var i = 0; i < n; i++) {
-			// 	var body  = _g.state.bodies[i];
-			// 	var actor = _g.state.actors[i];
-			// 	var position = body.GetPosition();
-			// 	actor.position.x = position.x * 100;
-			// 	actor.position.y = position.y * 100;
-			// 	actor.rotation = body.GetAngle();
-			// }
+			const n = _g.state.actors.length;
+			for (var i = 0; i < n; i++) {
+				var body  = _g.state.bodies[i];
+				var actor = _g.state.actors[i];
+				var position = body.GetPosition();
+				actor.position.x = position.x * 100;
+				actor.position.y = position.y * 100;
+				actor.rotation = body.GetAngle();
+			}
 			_g.socket.emit('my other event', { my: 'data' });
 
 			_g.state.renderer.render(_g.state.stage);
@@ -117,14 +117,19 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 				// console.log(data);
 				const n = data.length;
 				for (var i = 0; i < n; i++) {
-					var actor = _g.state.actors[i],
+					var body = _g.state.bodies[i],
 							d = data[i],
 							x = d.x,
 							y = d.y,
-							rot = d.rot;
-					actor.position.x = x * _g.METER;
-					actor.position.y = y * _g.METER;
-					actor.rotation = rot;
+							x_vel = d.x_vel,
+							y_vel = d.y_vel,
+							rot = d.rot,
+							pos = new Box2D.Common.Math.b2Vec2(x, y)
+							vel = new Box2D.Common.Math.b2Vec2(x_vel, y_vel);
+
+					body.SetPosition(pos);
+					body.SetLinearVelocity(vel);
+					body.SetAngle(rot);
 				}
 			});
 		}

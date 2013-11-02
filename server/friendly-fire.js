@@ -4,6 +4,7 @@ var Box2D = require('box2dweb');
 var MathUtil = require('./math_helpers');
 
 var client_sockets = [];
+var ARTIFICIAL_LATENCY_FACTOR = 1; // Make it 1 for no fake latency
 
 var game = {
 	UPDATE_INTERVAL: 1/60,
@@ -76,7 +77,7 @@ var game = {
 				_g.state.bodies.push(body);
 			}
 		}
-		setInterval(_g.update.bind(_g), _g.UPDATE_INTERVAL*1000);
+		setInterval(_g.update.bind(_g), _g.UPDATE_INTERVAL*1000*ARTIFICIAL_LATENCY_FACTOR);
 	},
 	update: function () {
 		var _g = this,
@@ -88,7 +89,8 @@ var game = {
 		for (var i = 0; i < n; i++) {
 			var body  = _g.state.bodies[i];
 			var position = body.GetPosition();
-			data.push({x: position.x, y: position.y, rot: body.GetAngle()});
+			var velocity = body.GetLinearVelocity()
+			data.push({x: position.x, y: position.y, rot: body.GetAngle(), x_vel: velocity.x, y_vel: velocity.y});
 		}
 		for (var i = 0; i < client_sockets.length; i++) {
 			var socket = client_sockets[i];
