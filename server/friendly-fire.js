@@ -1,6 +1,10 @@
-var io = require('socket.io');
+// var io = require('socket.io');
+var io;
 var Box2D = require('box2dweb');
 var MathUtil = require('./math_helpers');
+
+var client_sockets = [];
+
 var game = {
 	UPDATE_INTERVAL: 1/60,
 	STAGE_WIDTH: 1000,
@@ -10,9 +14,23 @@ var game = {
 		world: null,
 		bodies: [] // instances of b2Body (from Box2D)
 	},
-	init: function () {
+	init: function (server) {
 		var _g = this;
-		_g.state.world = new Box2D.Dynamics.b2World(new Box2D.Common.Math.b2Vec2(0, 10),  true);
+
+		io = require('socket.io').listen(server);
+		io.set('log level', 1);
+		io.sockets.on('connection', function (socket) {
+			console.log("Connect: ", socket.id);
+			client_sockets.push(socket);
+			socket.on('disconnect', function () {
+				console.log("Disconnect: ", socket.id);
+				var i = client_sockets.indexOf(socket);
+				if (i > -1) client_sockets.splice(i, 1);
+			});
+		});
+		
+		var gravity = new Box2D.Common.Math.b2Vec2(0, 10);
+		_g.state.world = new Box2D.Dynamics.b2World(gravity,  true);
 
 		const polyFixture = new Box2D.Dynamics.b2FixtureDef();
 		polyFixture.shape = new Box2D.Collision.Shapes.b2PolygonShape();
@@ -45,35 +63,37 @@ var game = {
 			bodyDef.position.Set(MathUtil.rndRange(0, _g.STAGE_WIDTH) / _g.METER, -MathUtil.rndRange(50, 5000) / _g.METER);
 			var body = _g.state.world.CreateBody(bodyDef);
 			var s;
-			if (Math.random() > 0.5) {
-				s = MathUtil.rndRange(70, 100);
+			if (i/40 > 0.5) {
+				s = i/40*50+50;
 				circleFixture.shape.SetRadius(s / 2 / _g.METER);
 				body.CreateFixture(circleFixture);
 				_g.state.bodies.push(body);
 			}
 			else {
-				s = MathUtil.rndRange(50, 100);
+				s = i/40*50+50;
 				polyFixture.shape.SetAsBox(s / 2 / _g.METER, s / 2 / _g.METER);
 				body.CreateFixture(polyFixture);
 				_g.state.bodies.push(body);
 			}
 		}
-		setInterval(function(){_g.update}, _g.UPDATE_INTERVAL*1000);
+		setInterval(_g.update.bind(_g), _g.UPDATE_INTERVAL*1000);
 	},
 	update: function () {
-		var _g = this;
-		_g.state.world.Step(_g.UPDATE_INTERVAL,  3,  3);
+		var _g = this,
+				data = [];
+		_g.state.world.Step(_g.UPDATE_INTERVAL, 3, 3);
 		_g.state.world.ClearForces();
-
-		// const n = state.bodies.length;
-		// for (var i = 0; i < n; i++) {
-		// 	var body  = state.bodies[i];
-		// 	var actor = state.actors[i];
-		// 	var position = body.GetPosition();
-		// 	position.x
-		// 	position.y
-		// 	body.GetAngle()
-		// }
+		// console.log(_g.state.world.m_island.m_bodies);
+		const n = _g.state.bodies.length;
+		for (var i = 0; i < n; i++) {
+			var body  = _g.state.bodies[i];
+			var position = body.GetPosition();
+			data.push({x: position.x, y: position.y, rot: body.GetAngle()});
+		}
+		for (var i = 0; i < client_sockets.length; i++) {
+			var socket = client_sockets[i];
+			socket.emit('update', data);
+		}
 	}
 };
 
