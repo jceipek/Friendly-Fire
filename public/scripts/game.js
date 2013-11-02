@@ -16,8 +16,9 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			var _g = this;
 
 			// create a connection to the server
-			var address = location.host; //window.prompt("Server address", "0.0.0.0");
-			this.socket = io.connect('http://' + address); // + ':5000');
+			var address = location.host;
+			_g.socket = io.connect('http://' + address);
+			_g.socket.on('update', _g.sync.bind(_g));
 
 			const container = document.createElement("div");
 			document.body.appendChild(container);
@@ -102,36 +103,29 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 				actor.position.y = position.y * 100;
 				actor.rotation = body.GetAngle();
 			}
-			_g.socket.emit('my other event', { my: 'data' });
-
 			_g.state.renderer.render(_g.state.stage);
-
 		},
-		sync: function() {
+		sync: function(data) {
 			var _g = this;
-			// _g.socket.on('news', function (data) {
-			// 	console.log(data);
-			// 	_g.socket.emit('my other event', { my: 'data' });
-			// });
-			_g.socket.on('update', function (data) {
-				// console.log(data);
-				const n = data.length;
-				for (var i = 0; i < n; i++) {
-					var body = _g.state.bodies[i],
-							d = data[i],
-							x = d.x,
-							y = d.y,
-							x_vel = d.x_vel,
-							y_vel = d.y_vel,
-							rot = d.rot,
-							pos = new Box2D.Common.Math.b2Vec2(x, y)
-							vel = new Box2D.Common.Math.b2Vec2(x_vel, y_vel);
+			if (!data) {
+				return;
+			}
+			var n = data.length;
+			for (var i = 0; i < n; i++) {
+				var body = _g.state.bodies[i],
+						d = data[i],
+						x = d.x,
+						y = d.y,
+						x_vel = d.x_vel,
+						y_vel = d.y_vel,
+						rot = d.rot,
+						pos = new Box2D.Common.Math.b2Vec2(x, y)
+						vel = new Box2D.Common.Math.b2Vec2(x_vel, y_vel);
 
-					body.SetPosition(pos);
-					body.SetLinearVelocity(vel);
-					body.SetAngle(rot);
-				}
-			});
+				body.SetPosition(pos);
+				body.SetLinearVelocity(vel);
+				body.SetAngle(rot);
+			}
 		}
 	};
 
