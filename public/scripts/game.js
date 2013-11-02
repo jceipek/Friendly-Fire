@@ -66,7 +66,7 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 					_g.state.stage.addChild(ball);
 					ball.i = i;
 					ball.anchor.x = ball.anchor.y = 0.5;
-					ball.scale.x = ball.scale.y = s / 100;
+					ball.scale.x = ball.scale.y = s / _g.METER;
 
 					_g.state.actors[_g.state.actors.length] = ball;
 				}
@@ -80,8 +80,8 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 					_g.state.stage.addChild(box);
 					box.i = i;
 					box.anchor.x = box.anchor.y = 0.5;
-					box.scale.x = s / 100;
-					box.scale.y = s / 100;
+					box.scale.x = s / _g.METER;
+					box.scale.y = s / _g.METER;
 
 					_g.state.actors[_g.state.actors.length] = box;
 				}
@@ -99,8 +99,8 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 				var body  = _g.state.bodies[i];
 				var actor = _g.state.actors[i];
 				var position = body.GetPosition();
-				actor.position.x = position.x * 100;
-				actor.position.y = position.y * 100;
+				actor.position.x = position.x * _g.METER;
+				actor.position.y = position.y * _g.METER;
 				actor.rotation = body.GetAngle();
 			}
 			_g.state.renderer.render(_g.state.stage);
@@ -118,12 +118,14 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 						y = d.y,
 						x_vel = d.x_vel,
 						y_vel = d.y_vel,
+						a_vel = d.a_vel,
 						rot = d.rot,
 						pos = new Box2D.Common.Math.b2Vec2(x, y)
 						vel = new Box2D.Common.Math.b2Vec2(x_vel, y_vel);
 
 				body.SetPosition(pos);
 				body.SetLinearVelocity(vel);
+				body.SetAngularVelocity(a_vel);
 				body.SetAngle(rot);
 			}
 		}

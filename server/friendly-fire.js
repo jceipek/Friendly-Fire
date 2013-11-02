@@ -72,22 +72,32 @@ var game = {
 				_g.state.bodies.push(body);
 			}
 		}
-		setInterval(_g.update.bind(_g), _g.UPDATE_INTERVAL*1000*ARTIFICIAL_LATENCY_FACTOR);
+		setInterval(_g.step.bind(_g), _g.UPDATE_INTERVAL * 1000);
+		setInterval(_g.sync.bind(_g), _g.UPDATE_INTERVAL * 1000 * ARTIFICIAL_LATENCY_FACTOR);
 	},
-	update: function () {
+	sync: function () {
 		var _g = this,
-			data = [];
-		_g.state.world.Step(_g.UPDATE_INTERVAL, 3, 3);
-		_g.state.world.ClearForces();
-		// console.log(_g.state.world.m_island.m_bodies);
+				data = [];
 		const n = _g.state.bodies.length;
 		for (var i = 0; i < n; i++) {
 			var body  = _g.state.bodies[i];
 			var position = body.GetPosition();
-			var velocity = body.GetLinearVelocity()
-			data.push({x: position.x, y: position.y, rot: body.GetAngle(), x_vel: velocity.x, y_vel: velocity.y});
+			var velocity = body.GetLinearVelocity();
+			var angular_velocity = body.GetAngularVelocity();
+			data.push({ x: position.x,
+									y: position.y,
+									rot: body.GetAngle(),
+									x_vel: velocity.x,
+									y_vel: velocity.y,
+									a_vel: angular_velocity });
 		}
 		_g.io.sockets.emit('update', data);
+		// console.log(_g.state.world.m_island.m_bodies);
+	},
+	step: function () {
+		var _g = this;
+		_g.state.world.Step(_g.UPDATE_INTERVAL, 3, 3);
+		_g.state.world.ClearForces();
 	}
 };
 
