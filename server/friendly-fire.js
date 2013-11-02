@@ -1,9 +1,7 @@
-// var io = require('socket.io');
-var io;
+var socketio = require('socket.io');
 var Box2D = require('box2dweb');
 var MathUtil = require('./math_helpers');
 
-var client_sockets = [];
 var ARTIFICIAL_LATENCY_FACTOR = 1; // Make it 1 for no fake latency
 
 var game = {
@@ -18,15 +16,12 @@ var game = {
 	init: function (server) {
 		var _g = this;
 
-		io = require('socket.io').listen(server);
-		io.set('log level', 1);
-		io.sockets.on('connection', function (socket) {
-			console.log("Connect: ", socket.id);
-			client_sockets.push(socket);
+		_g.io = socketio.listen(server);
+		_g.io.set('log level', 1);
+		_g.io.sockets.on('connection', function (socket) {
+			console.log("Connection: ", socket.id);
 			socket.on('disconnect', function () {
 				console.log("Disconnect: ", socket.id);
-				var i = client_sockets.indexOf(socket);
-				if (i > -1) client_sockets.splice(i, 1);
 			});
 		});
 		
@@ -81,7 +76,7 @@ var game = {
 	},
 	update: function () {
 		var _g = this,
-				data = [];
+			data = [];
 		_g.state.world.Step(_g.UPDATE_INTERVAL, 3, 3);
 		_g.state.world.ClearForces();
 		// console.log(_g.state.world.m_island.m_bodies);
@@ -92,10 +87,7 @@ var game = {
 			var velocity = body.GetLinearVelocity()
 			data.push({x: position.x, y: position.y, rot: body.GetAngle(), x_vel: velocity.x, y_vel: velocity.y});
 		}
-		for (var i = 0; i < client_sockets.length; i++) {
-			var socket = client_sockets[i];
-			socket.emit('update', data);
-		}
+		_g.io.sockets.emit('update', data);
 	}
 };
 
