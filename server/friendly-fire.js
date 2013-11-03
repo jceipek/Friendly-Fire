@@ -42,9 +42,8 @@ var game = {
 		// 	body.ApplyForce(new Box2D.Common.Math.b2Vec2(vector.x * 10, vector.y * 10), body.GetWorldCenter());
 		// });
 		socket.on('set_destination', function (loc) {
-			// var body = state.bodies[players[socket.id].ship_id];
-			// body.ApplyForce(new Box2D.Common.Math.b2Vec2(vector.x * 10, vector.y * 10), body.GetWorldCenter());
-			console.log('set dest: ', loc);
+			var player = state.players[socket.id];
+			player.special_properties.destination = loc;
 		});
 	},
 	initNetwork: function (server) {
@@ -65,7 +64,7 @@ var game = {
 			// To new player: create objects that exist on the server
 			new_socket.emit('make_objects', other_objects);
 			var ship_id = _g.addShip();
-			state.players[new_socket.id] = { socket: new_socket, type: ship_type, ship_id: ship_id };
+			state.players[new_socket.id] = { socket: new_socket, type: ship_type, ship_id: ship_id, special_properties: {} };
 
 			// To everyone: create a new ship for the new player
 			io.sockets.emit('make_objects', [{type: ship_type, id: ship_id}]);
@@ -74,9 +73,14 @@ var game = {
 			new_socket.emit('assign_ship', ship_id);
 			new_socket.on('disconnect', function () {
 				console.log("Disconnect: ", new_socket.id);
-				delete players[new_socket.id];
+				_g.removeObject(state.players[new_socket.id].ship_id);
+				delete state.players[new_socket.id];
 			});
 		});
+	},
+	removeObject: function (id) {
+		state.world.DestroyBody(state.bodies[id]);
+		delete state.bodies[id];
 	},
 	addShip: function (params) {
 		params = params || {};
@@ -119,6 +123,21 @@ var game = {
 	step: function () {
 		state.world.Step(UPDATE_INTERVAL, 3, 3);
 		state.world.ClearForces();
+		for (var player_idx in state.players) {
+			if (state.players.hasOwnProperty(player_idx)) {
+				var player = state.players[player_idx]
+						loc = player.special_properties.destination,
+						ship = state.bodies[player.ship_id],
+						ship_loc = ship.GetPosition();
+				if (loc) {
+					vec = new Box2D.Common.Math.b2Vec2((loc.x - ship_loc.x), (loc.y - ship_loc.y));
+					var vel = ship.GetLinearVelocity();
+					vec.Normalize();
+					// vec = new Box2D.Common.Math.b2Vec2(vec.x * (vel.x + 0.1), vec.y * (1/(vel.y + 0.1);
+					ship.ApplyForce(vec, ship.GetWorldCenter());
+				}
+			}
+		}
 	}
 };
 

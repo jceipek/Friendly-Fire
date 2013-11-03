@@ -31,7 +31,7 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			window.onmousemove = function (e) {
 				var shipPos = state.objects[state.my_ship].body.GetPosition();
 				var destination = {x: e.clientX/METER , y: e.clientY/METER };
-				socket.emit("set_destination", destination)
+				socket.emit("set_destination", destination);
 			};
 			// window.onkeydown = function (e) {
 			// 	console.log("KEY PRESS");
