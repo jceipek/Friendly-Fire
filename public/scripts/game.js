@@ -29,6 +29,7 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 		},
 		registerInput: function () {
 			window.onkeydown = function (e) {
+				console.log("KEY PRESS");
 				var vector = {x: 0, y: 0};
 				if (e.keyCode == 87) {
 					vector.y = -1;
@@ -43,6 +44,7 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 					vector.x = -1;
 				}
 				if (!(vector.x == 0 && vector.y == 0)) {
+					console.log("EMIT");
 					socket.emit("move", vector);
 				}
 			};
@@ -92,7 +94,7 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			definitions.bodyDef.type = Box2D.Dynamics.b2Body.b2_dynamicBody;
 			definitions.bodyDef.position.Set(pos.x, pos.y);
 			body = state.world.CreateBody(definitions.bodyDef);
-
+			// debugger;
 			size = 50;
 			definitions.circleFixture.shape.SetRadius(size / 2 / METER);
 			body.CreateFixture(definitions.circleFixture);
