@@ -9,7 +9,8 @@ const STAGE_HEIGHT = 900; // px
 const PX_PER_METER = 100; // conversion
 var state = {
 	world: null,
-	bodies: [] // instances of b2Body (from Box2D)
+	bodies: {}, // instances of b2Body (from Box2D)
+	players: {}
 };
 var definitions = {
 	polyFixture: new Box2D.Dynamics.b2FixtureDef(),
@@ -17,6 +18,7 @@ var definitions = {
 	bodyDef: new Box2D.Dynamics.b2BodyDef()
 };
 var io = null;
+var object_tracker = 0; // Increments every time a new object is added
 
 var game = {
 	init: function (server) {
@@ -25,8 +27,6 @@ var game = {
 		state.world = new Box2D.Dynamics.b2World(gravity,  true);
 
 		this.initFixtures();
-
-		this.addShip({pos: {x: STAGE_WIDTH/2/PX_PER_METER, y: STAGE_HEIGHT/2/PX_PER_METER}});
 
 		setInterval(this.step.bind(this), UPDATE_INTERVAL * 1000);
 		setInterval(this.sync.bind(this), UPDATE_INTERVAL * 1000 * ARTIFICIAL_LATENCY_FACTOR);
@@ -37,19 +37,44 @@ var game = {
 		definitions.circleFixture.restitution = 0.7;
 	},
 	initInputHandling: function (socket) {
-		socket.on('move', function (vector) {
-			state.bodies[0].ApplyForce(new Box2D.Common.Math.b2Vec2(vector.x * 10, vector.y * 10), state.bodies[0].GetWorldCenter());
+		// socket.on('move', function (vector) {
+		// 	var body = state.bodies[players[socket.id].ship_id];
+		// 	body.ApplyForce(new Box2D.Common.Math.b2Vec2(vector.x * 10, vector.y * 10), body.GetWorldCenter());
+		// });
+		socket.on('set_destination', function (loc) {
+			// var body = state.bodies[players[socket.id].ship_id];
+			// body.ApplyForce(new Box2D.Common.Math.b2Vec2(vector.x * 10, vector.y * 10), body.GetWorldCenter());
+			console.log('set dest: ', loc);
 		});
 	},
 	initNetwork: function (server) {
 		var _g = this;
 		io = socketio.listen(server);
 		io.set('log level', 1);
-		io.sockets.on('connection', function (socket) {
-			console.log("Connection: ", socket.id);
-			_g.initInputHandling(socket);
-			socket.on('disconnect', function () {
-				console.log("Disconnect: ", socket.id);
+		io.sockets.on('connection', function (new_socket) {
+			console.log("Connection: ", new_socket.id);
+			_g.initInputHandling(new_socket);
+			var ship_type = 'avenger';
+			var other_objects = [];
+			for (var s in _g.state.players) {
+				if (_g.state.players.hasOwnProperty(s)) {
+					var player = _g.state.players[s];
+					other_objects.push({type: ship_type, id: player.ship_id});
+				}
+			}
+			// To new player: create objects that exist on the server
+			new_socket.emit('make_objects', other_objects);
+			var ship_id = this.addShip();
+			players[new_socket.id] = { socket: new_socket, type: ship_type, ship_id: ship_id };
+
+			// To everyone: create a new ship for the new player
+			sockets.emit('make_objects', [{type: ship_type, id: ship_id}]);
+
+			// To new player: assign control of the new ship
+			new_socket.emit('assign_ship', ship_id);
+			new_socket.on('disconnect', function () {
+				console.log("Disconnect: ", new_socket.id);
+				delete players[new_socket.id];
 			});
 		});
 	},
@@ -67,22 +92,27 @@ var game = {
 		definitions.circleFixture.shape.SetRadius(size / 2 / PX_PER_METER);
 		body.CreateFixture(definitions.circleFixture);
 
-		state.bodies.push(body);
+		var id = object_tracker;
+		state.bodies[id] = body;
+		object_tracker++;
+		return id;
 	},
 	sync: function () {
 		var data = [];
-		const n = state.bodies.length;
-		for (var i = 0; i < n; i++) {
-			var body  = state.bodies[i];
-			var position = body.GetPosition();
-			var velocity = body.GetLinearVelocity();
-			var angular_velocity = body.GetAngularVelocity();
-			data.push({ x: position.x,
-									y: position.y,
-									rot: body.GetAngle(),
-									x_vel: velocity.x,
-									y_vel: velocity.y,
-									a_vel: angular_velocity });
+		for (var b_idx in state.bodies) {
+			if (state.bodies.hasOwnProperty(b_idx)) {
+				var body = state.bodies[b_idx];
+				var position = body.GetPosition();
+				var velocity = body.GetLinearVelocity();
+				var angular_velocity = body.GetAngularVelocity();
+				data.push({ id: b_idx,
+										x: position.x,
+										y: position.y,
+										rot: body.GetAngle(),
+										x_vel: velocity.x,
+										y_vel: velocity.y,
+										a_vel: angular_velocity });
+			}
 		}
 		io.sockets.emit('update', data);
 	},
