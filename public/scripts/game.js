@@ -1,6 +1,6 @@
 define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI, Box2D, MathUtil, io) {
-	const STAGE_WIDTH = window.innerWidth;
-	const STAGE_HEIGHT = window.innerHeight;
+	var stage_width = window.innerWidth;
+	var stage_height = window.innerHeight;
 	const METER = 100;
 
 	var state = {
@@ -64,8 +64,13 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			document.body.appendChild(container);
 
 			state.stage = new PIXI.Stage(0xDDDDDD, true);
-			state.renderer = PIXI.autoDetectRenderer(STAGE_WIDTH, STAGE_HEIGHT, undefined, false);
+			state.renderer = PIXI.autoDetectRenderer(stage_width, stage_height, undefined, false);
 			document.body.appendChild(state.renderer.view);
+			window.addEventListener('resize', function(){
+				stage_width = window.innerWidth;
+				stage_height = window.innerHeight;
+				state.renderer.resize(stage_width, stage_height);
+			});
 
 			const loader = new PIXI.AssetLoader(["assets/ball.png",
 				"assets/avenger.png"]);
