@@ -37,6 +37,7 @@ var game = {
 		definitions.circleFixture.restitution = 0.7;
 	},
 	initInputHandling: function (socket) {
+		var _g = this;
 		// socket.on('move', function (vector) {
 		// 	var body = state.bodies[players[socket.id].ship_id];
 		// 	body.ApplyForce(new Box2D.Common.Math.b2Vec2(vector.x * 10, vector.y * 10), body.GetWorldCenter());
@@ -44,6 +45,14 @@ var game = {
 		socket.on('set_destination', function (loc) {
 			var player = state.players[socket.id];
 			player.special_properties.destination = loc;
+		});
+		socket.on('fire', function (time) {
+			var player = state.players[socket.id];
+			var ship = state.bodies[player.ship_id];
+			var pos = ship.GetPosition();
+			_g.addBullet({x: pos.x, y: pos.y});
+			// var player = state.players[socket.id];
+			// player.special_properties.destination = loc;
 		});
 	},
 	initNetwork: function (server) {
@@ -81,6 +90,25 @@ var game = {
 	removeObject: function (id) {
 		state.world.DestroyBody(state.bodies[id]);
 		delete state.bodies[id];
+	},
+	addBullet: function (params) {
+		params = params || {};
+		var pos = params.pos || {x: 0, y: 0},
+			body,
+			size;
+
+		definitions.bodyDef.type = Box2D.Dynamics.b2Body.b2_dynamicBody;
+		definitions.bodyDef.position.Set(pos.x, pos.y);
+		body = state.world.CreateBody(definitions.bodyDef);
+
+		size = 5;
+		definitions.circleFixture.shape.SetRadius(size / 2 / PX_PER_METER);
+		body.CreateFixture(definitions.circleFixture);
+
+		var id = object_tracker;
+		state.bodies[id] = body;
+		object_tracker++;
+		return id;
 	},
 	addShip: function (params) {
 		params = params || {};
@@ -138,6 +166,9 @@ var game = {
 					vec = new Box2D.Common.Math.b2Vec2(vec.x * k, vec.y * k);
 					ship.m_linearDamping = 3;
 					des_angle = Math.atan2(vec.x, -vec.y);
+					// var next_angle = (ship.GetAngle() + ship.GetAngularVelocity()) / 3;
+					// var total_rotation = des_angle - next_angle;
+					// ship.ApplyTorque(total_rotation < 0 ? -10 : 10);
 					ship.SetAngle(des_angle);
 					ship.ApplyForce(vec, ship.GetWorldCenter());
 				}

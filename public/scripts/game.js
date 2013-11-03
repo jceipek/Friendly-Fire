@@ -33,6 +33,11 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 				var destination = {x: e.clientX/METER , y: e.clientY/METER };
 				socket.emit("set_destination", destination);
 			};
+			window.onmousedown = function (e) {
+				// var shipPos = state.objects[state.my_ship].body.GetPosition();
+				// var destination = {x: e.clientX/METER , y: e.clientY/METER };
+				socket.emit("fire", new Date());
+			};
 			// window.onkeydown = function (e) {
 			// 	console.log("KEY PRESS");
 			// 	var vector = {x: 0, y: 0};
