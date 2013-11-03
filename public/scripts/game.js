@@ -31,10 +31,10 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			window.onkeydown = function (e) {
 				var vector = {x: 0, y: 0};
 				if (e.keyCode == 87) {
-					vector.y = 1;
+					vector.y = -1;
 				}
 				if (e.keyCode == 83){
-					vector.y = -1;
+					vector.y = 1;
 				}
 				if (e.keyCode == 68) {
 					vector.x = 1;
