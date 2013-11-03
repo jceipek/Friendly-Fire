@@ -23,10 +23,10 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 
 		init: function () {
 			// create a connection to the server
-			var address = location.host;
-			socket = io.connect('http://' + address);
-			socket.on('update', this.sync.bind(this));
-
+			this.connectToServer();
+			this.initGraphics();
+		},
+		initGraphics: function () {
 			const container = document.createElement("div");
 			document.body.appendChild(container);
 
@@ -39,69 +39,31 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			loader.onComplete = this.onLoadAssets.bind(this);
 			loader.load();
 		},
+		connectToServer: function () {
+			var address = location.host;
+			socket = io.connect('http://' + address);
+			socket.on('update', this.sync.bind(this));
+		},
 		onLoadAssets: function () {
 			var gravity = new Box2D.Common.Math.b2Vec2(0, 0);
-			
+
 			this.sync();
 
 			state.world = new Box2D.Dynamics.b2World(gravity,  true);
 
-			definitions.circleFixture.shape = new Box2D.Collision.Shapes.b2CircleShape();
-			definitions.circleFixture.density = 1;
-			definitions.circleFixture.restitution = 0.7;
+			this.initFixtures();
 
-			// const polyFixture = new Box2D.Dynamics.b2FixtureDef();
-			// polyFixture.shape = new Box2D.Collision.Shapes.b2PolygonShape();
-			// polyFixture.density = 1;
-
-			// const circleFixture = new Box2D.Dynamics.b2FixtureDef();
-			// circleFixture.shape = new Box2D.Collision.Shapes.b2CircleShape();
-			// circleFixture.density = 1;
-			// circleFixture.restitution = 0.7;
-
-			// const bodyDef = new Box2D.Dynamics.b2BodyDef();
-			// bodyDef.type = Box2D.Dynamics.b2Body.b2_kinematicBody;
-
-			// for (var i = 0; i < 40; i++) {
-			// 	bodyDef.position.Set(MathUtil.rndRange(0, STAGE_WIDTH) / METER, -MathUtil.rndRange(50, 5000) / METER);
-			// 	var body = world.CreateBody(bodyDef);
-			// 	var s;
-			// 	if (i/40 > 0.5) {
-			// 		s = i/40*50+50;
-			// 		circleFixture.shape.SetRadius(s / 2 / METER);
-			// 		body.CreateFixture(circleFixture);
-			// 		state.bodies.push(body);
-
-			// 		var ball = new PIXI.Sprite(PIXI.Texture.fromFrame("assets/ball.png"));
-			// 		state.stage.addChild(ball);
-			// 		ball.i = i;
-			// 		ball.anchor.x = ball.anchor.y = 0.5;
-			// 		ball.scale.x = ball.scale.y = s / METER;
-
-			// 		state.actors[state.actors.length] = ball;
-			// 	}
-			// 	else {
-			// 		s = i/40*50+50;
-			// 		polyFixture.shape.SetAsBox(s / 2 / METER, s / 2 / METER);
-			// 		body.CreateFixture(polyFixture);
-			// 		state.bodies.push(body);
-
-			// 		var box = new PIXI.Sprite(PIXI.Texture.fromFrame("assets/avenger.png"));
-			// 		state.stage.addChild(box);
-			// 		box.i = i;
-			// 		box.anchor.x = box.anchor.y = 0.5;
-			// 		box.scale.x = s / METER;
-			// 		box.scale.y = s / METER;
-
-			// 		state.actors[state.actors.length] = box;
-			// 	}
-			// }
 			this.addShip({pos: {x: STAGE_WIDTH/2/METER, y: STAGE_HEIGHT/2/METER}});
 
 			this.update();
 		},
+		initFixtures: function () {
+			definitions.circleFixture.shape = new Box2D.Collision.Shapes.b2CircleShape();
+			definitions.circleFixture.density = 1;
+			definitions.circleFixture.restitution = 0.7;
+		},
 		addShip: function (params) {
-			params = params || {};		
+			params = params || {};
 			var pos = params.pos || {x: 0, y: 0},
 				body,
 				size;
@@ -116,7 +78,7 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 
 			var ship_actor = new PIXI.Sprite(PIXI.Texture.fromFrame("assets/avenger.png"));
 			state.stage.addChild(ship_actor);
-			// ship_actor.i = i;
+
 			ship_actor.anchor.x = ship_actor.anchor.y = 0.5;
 			ship_actor.scale.x = size / METER;
 			ship_actor.scale.y = size / METER;
