@@ -21,6 +21,7 @@ var io = null;
 var game = {
 	init: function (server) {
 		this.initNetwork(server);
+		this.initInputHandling();
 
 		var gravity = new Box2D.Common.Math.b2Vec2(0, 0);
 		state.world = new Box2D.Dynamics.b2World(gravity,  true);
@@ -36,6 +37,12 @@ var game = {
 		definitions.circleFixture.shape = new Box2D.Collision.Shapes.b2CircleShape();
 		definitions.circleFixture.density = 1;
 		definitions.circleFixture.restitution = 0.7;
+	},
+	initInputHandling: function () {
+		io.sockets.on('move', function (vector) {
+			console.log(vector);
+			bodies[0].ApplyLinearImpulse(Box2D.Common.Math.b2Vec2(vector.x * 10, vector.y * 10));
+		});
 	},
 	initNetwork: function (server) {
 		io = socketio.listen(server);
