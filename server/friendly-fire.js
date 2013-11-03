@@ -50,7 +50,7 @@ var game = {
 		});
 		socket.on('fire', function (time) {
 			var pos = ship.GetPosition();
-			var bullet_id = _g.addBullet({pos: {x: pos.x, y: pos.y}});
+			var bullet_id = _g.addBullet({pos: {x: pos.x, y: pos.y}, angle: ship.GetAngle(), vel: ship.GetLinearVelocity()});
 			io.sockets.emit('make_objects', [{type: 'bullet', id: bullet_id}]);
 			// var player = state.players[socket.id];
 			// player.special_properties.destination = loc;
@@ -97,16 +97,22 @@ var game = {
 		var _g = this;
 		params = params || {};
 		var pos = params.pos || {x: 0, y: 0},
-			body,
-			size;
+				angle = params.angle || 0,
+				ship_vel = params.vel || {x: 0, y: 0},
+				body,
+				size;
+		var vec = new Box2D.Common.Math.b2Vec2(Math.sin(angle), -Math.cos(angle));
+		var vel = new Box2D.Common.Math.b2Vec2(vec.x * 5 + ship_vel.x, vec.y * 5 + ship_vel.y);
 
 		definitions.bodyDef.type = Box2D.Dynamics.b2Body.b2_dynamicBody;
-		definitions.bodyDef.position.Set(pos.x, pos.y);
+		definitions.bodyDef.position.Set(pos.x + vec.x * 0.3, pos.y + vec.y * 0.3);
 		body = state.world.CreateBody(definitions.bodyDef);
 
 		size = 5;
 		definitions.circleFixture.shape.SetRadius(size / 2 / PX_PER_METER);
 		body.CreateFixture(definitions.circleFixture);
+		body.SetAngle(angle);
+		body.SetLinearVelocity(vel);
 		body.entity_type = 'bullet';
 		var id = object_tracker;
 		state.bodies[id] = body;
