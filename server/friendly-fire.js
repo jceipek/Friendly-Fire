@@ -40,6 +40,8 @@ var game = {
 		var _g = this;
 		var player = state.players[socket.id];
 		var ship = state.bodies[player.ship_id];
+
+
 		// socket.on('move', function (vector) {
 		// 	var body = state.bodies[players[socket.id].ship_id];
 		// 	body.ApplyForce(new Box2D.Common.Math.b2Vec2(vector.x * 10, vector.y * 10), body.GetWorldCenter());
@@ -61,7 +63,6 @@ var game = {
 		io.set('log level', 1);
 		io.sockets.on('connection', function (new_socket) {
 			console.log("Connection: ", new_socket.id);
-			_g.initInputHandling(new_socket);
 			var ship_type = 'avenger';
 			var other_objects = [];
 			for (var s in state.players) {
@@ -80,6 +81,7 @@ var game = {
 
 			// To new player: assign control of the new ship
 			new_socket.emit('assign_ship', ship_id);
+			_g.initInputHandling(new_socket);
 			new_socket.on('disconnect', function () {
 				console.log("Disconnect: ", new_socket.id);
 				_g.removeObject(state.players[new_socket.id].ship_id);
@@ -108,6 +110,7 @@ var game = {
 		var id = object_tracker;
 		state.bodies[id] = body;
 		object_tracker++;
+		//setTimeout(function () {this.removeObject(id);}, 1000);
 		return id;
 	},
 	addShip: function (params) {
@@ -154,7 +157,7 @@ var game = {
 		for (var player_idx in state.players) {
 			if (state.players.hasOwnProperty(player_idx)) {
 				var player = state.players[player_idx],
-						loc = player.special_properties.destination,
+						loc = player.destination,
 						ship = state.bodies[player.ship_id],
 						ship_loc = ship.GetPosition();
 				if (loc) {
