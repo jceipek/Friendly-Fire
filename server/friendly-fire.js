@@ -38,19 +38,19 @@ var game = {
 	},
 	initInputHandling: function (socket) {
 		var _g = this;
+		var player = state.players[socket.id];
+		var ship = state.bodies[player.ship_id];
 		// socket.on('move', function (vector) {
 		// 	var body = state.bodies[players[socket.id].ship_id];
 		// 	body.ApplyForce(new Box2D.Common.Math.b2Vec2(vector.x * 10, vector.y * 10), body.GetWorldCenter());
 		// });
-		socket.on('set_destination', function (loc) {
-			var player = state.players[socket.id];
-			player.special_properties.destination = loc;
+		socket.on('set_destination', function (destination) {
+			player.destination = destination;
 		});
 		socket.on('fire', function (time) {
-			var player = state.players[socket.id];
-			var ship = state.bodies[player.ship_id];
 			var pos = ship.GetPosition();
-			_g.addBullet({x: pos.x, y: pos.y});
+			var bullet_id = _g.addBullet({pos: {x: pos.x, y: pos.y}});
+			io.sockets.emit('make_objects', [{type: 'bullet', id: bullet_id}]);
 			// var player = state.players[socket.id];
 			// player.special_properties.destination = loc;
 		});
@@ -153,7 +153,7 @@ var game = {
 		state.world.ClearForces();
 		for (var player_idx in state.players) {
 			if (state.players.hasOwnProperty(player_idx)) {
-				var player = state.players[player_idx]
+				var player = state.players[player_idx],
 						loc = player.special_properties.destination,
 						ship = state.bodies[player.ship_id],
 						ship_loc = ship.GetPosition();

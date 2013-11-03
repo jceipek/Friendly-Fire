@@ -29,9 +29,12 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 		},
 		registerInput: function () {
 			window.onmousemove = function (e) {
-				var shipPos = state.objects[state.my_ship].body.GetPosition();
-				var destination = {x: e.clientX/METER , y: e.clientY/METER };
-				socket.emit("set_destination", destination);
+				if (state.my_ship) {
+					var shipPos = state.objects[state.my_ship].body.GetPosition();
+					var destination = {x: e.clientX/METER , y: e.clientY/METER };
+					socket.emit("set_destination", destination);
+				}
+
 			};
 			window.onmousedown = function (e) {
 				// var shipPos = state.objects[state.my_ship].body.GetPosition();
@@ -73,7 +76,8 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			});
 
 			const loader = new PIXI.AssetLoader(["assets/ball.png",
-				"assets/avenger.png"]);
+				"assets/avenger.png",
+				"assets/bullet.png"]);
 			loader.onComplete = this.onLoadAssets.bind(this);
 			loader.load();
 		},
@@ -90,7 +94,11 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 		createObjects: function (objList) {
 			for (i = 0; i < objList.length; i++){
 				var obj = objList[i];
-				this.addShip(obj.id, {type: obj.type});
+				if (obj.type == 'avenger') {
+					this.addShip(obj.id, {type: obj.type});
+				} else if (obj.type == 'bullet') {
+					this.addBullet(obj.id, {type: obj.type});
+				}
 			}
 		},
 		onLoadAssets: function () {
@@ -132,6 +140,28 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 
 			state.objects[id] = {body: body, actor: ship_actor};
 		},
+		addBullet: function (id, params) {
+			params = params || {};
+			var pos = params.pos || {x: 0, y: 0},
+				body,
+				size;
+
+			definitions.bodyDef.type = Box2D.Dynamics.b2Body.b2_dynamicBody;
+			definitions.bodyDef.position.Set(pos.x, pos.y);
+			body = state.world.CreateBody(definitions.bodyDef);
+			size = 5;
+			definitions.circleFixture.shape.SetRadius(size / 2 / METER);
+			body.CreateFixture(definitions.circleFixture);
+
+			var bullet_actor = new PIXI.Sprite(PIXI.Texture.fromFrame("assets/bullet.png"));
+			state.stage.addChild(bullet_actor);
+
+			bullet_actor.anchor.x = bullet_actor.anchor.y = 0.5;
+			//bullet_actor.scale.x = size / METER;
+			//bullet_actor.scale.y = size / METER;
+
+			state.objects[id] = {body: body, actor: bullet_actor};
+		},
 		update: function () {
 			requestAnimationFrame(this.update.bind(this));
 			state.world.Step(1 / 60,  3,  3);
@@ -156,7 +186,7 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			var n = data.length;
 			for (var i = 0; i < n; i++) {
 				var d = data[i],
-						body = state.objects[d.id].body,
+						body,
 						x = d.x,
 						y = d.y,
 						x_vel = d.x_vel,
@@ -166,13 +196,15 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 						pos = new Box2D.Common.Math.b2Vec2(x, y)
 						vel = new Box2D.Common.Math.b2Vec2(x_vel, y_vel);
 
-				if (body) {
-					body.SetPosition(pos);
-					body.SetLinearVelocity(vel);
-					body.SetAngularVelocity(a_vel);
-					body.SetAngle(rot);
+				if (state.objects[d.id]) {
+					body = state.objects[d.id].body;
+					if (body) {
+						body.SetPosition(pos);
+						body.SetLinearVelocity(vel);
+						body.SetAngularVelocity(a_vel);
+						body.SetAngle(rot);
+					}
 				}
-
 			}
 		}
 	};
