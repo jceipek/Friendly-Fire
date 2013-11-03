@@ -130,10 +130,15 @@ var game = {
 						ship = state.bodies[player.ship_id],
 						ship_loc = ship.GetPosition();
 				if (loc) {
+					var k = 4,
+							des_angle;
 					vec = new Box2D.Common.Math.b2Vec2((loc.x - ship_loc.x), (loc.y - ship_loc.y));
-					var vel = ship.GetLinearVelocity();
 					vec.Normalize();
-					// vec = new Box2D.Common.Math.b2Vec2(vec.x * (vel.x + 0.1), vec.y * (1/(vel.y + 0.1);
+
+					vec = new Box2D.Common.Math.b2Vec2(vec.x * k, vec.y * k);
+					ship.m_linearDamping = 3;
+					des_angle = Math.atan2(vec.x, -vec.y);
+					ship.SetAngle(des_angle);
 					ship.ApplyForce(vec, ship.GetWorldCenter());
 				}
 			}
