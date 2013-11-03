@@ -13,6 +13,11 @@ var game = {
 		world: null,
 		bodies: [] // instances of b2Body (from Box2D)
 	},
+	definitions: {
+		polyFixture: new Box2D.Dynamics.b2FixtureDef(),
+		circleFixture: new Box2D.Dynamics.b2FixtureDef(),
+		bodyDef: new Box2D.Dynamics.b2BodyDef()
+	},
 	init: function (server) {
 		var _g = this;
 
@@ -25,55 +30,80 @@ var game = {
 			});
 		});
 		
-		var gravity = new Box2D.Common.Math.b2Vec2(0, 10);
+		var gravity = new Box2D.Common.Math.b2Vec2(0, 0);
 		_g.state.world = new Box2D.Dynamics.b2World(gravity,  true);
 
-		const polyFixture = new Box2D.Dynamics.b2FixtureDef();
-		polyFixture.shape = new Box2D.Collision.Shapes.b2PolygonShape();
-		polyFixture.density = 1;
+		// TODO: Encapsulate
+		_g.definitions.circleFixture.shape = new Box2D.Collision.Shapes.b2CircleShape();
+		_g.definitions.circleFixture.density = 1;
+		_g.definitions.circleFixture.restitution = 0.7;
 
-		const circleFixture = new Box2D.Dynamics.b2FixtureDef();
-		circleFixture.shape = new Box2D.Collision.Shapes.b2CircleShape();
-		circleFixture.density = 1;
-		circleFixture.restitution = 0.7;
+		// const polyFixture = new Box2D.Dynamics.b2FixtureDef()
+		// polyFixture.shape = new Box2D.Collision.Shapes.b2PolygonShape();
+		// polyFixture.density = 1;
 
-		const bodyDef = new Box2D.Dynamics.b2BodyDef();
-		bodyDef.type = Box2D.Dynamics.b2Body.b2_staticBody;
+		// const circleFixture = 
+		// circleFixture.shape = new Box2D.Collision.Shapes.b2CircleShape();
+		// circleFixture.density = 1;
+		// circleFixture.restitution = 0.7;
+
+		// const bodyDef =
+		// bodyDef.type = Box2D.Dynamics.b2Body.b2_staticBody;
 
 		//down
-		polyFixture.shape.SetAsBox(10, 1);
-		bodyDef.position.Set(9, _g.STAGE_HEIGHT / _g.METER + 1);
-		_g.state.world.CreateBody(bodyDef).CreateFixture(polyFixture);
+		// polyFixture.shape.SetAsBox(10, 1);
+		// bodyDef.position.Set(9, _g.STAGE_HEIGHT / _g.METER + 1);
+		// _g.state.world.CreateBody(bodyDef).CreateFixture(polyFixture);
 
 		//left
-		polyFixture.shape.SetAsBox(1, 100);
-		bodyDef.position.Set(-1, 0);
-		_g.state.world.CreateBody(bodyDef).CreateFixture(polyFixture);
+		// polyFixture.shape.SetAsBox(1, 100);
+		// bodyDef.position.Set(-1, 0);
+		// _g.state.world.CreateBody(bodyDef).CreateFixture(polyFixture);
 
 		//right
-		bodyDef.position.Set(_g.STAGE_WIDTH / _g.METER + 1, 0);
-		_g.state.world.CreateBody(bodyDef).CreateFixture(polyFixture);
-		bodyDef.type = Box2D.Dynamics.b2Body.b2_dynamicBody;
+		// bodyDef.position.Set(_g.STAGE_WIDTH / _g.METER + 1, 0);
+		// _g.state.world.CreateBody(bodyDef).CreateFixture(polyFixture);
+		// bodyDef.type = Box2D.Dynamics.b2Body.b2_dynamicBody;
 
-		for (var i = 0; i < 40; i++) {
-			bodyDef.position.Set(MathUtil.rndRange(0, _g.STAGE_WIDTH) / _g.METER, -MathUtil.rndRange(50, 5000) / _g.METER);
-			var body = _g.state.world.CreateBody(bodyDef);
-			var s;
-			if (i/40 > 0.5) {
-				s = i/40*50+50;
-				circleFixture.shape.SetRadius(s / 2 / _g.METER);
-				body.CreateFixture(circleFixture);
-				_g.state.bodies.push(body);
-			}
-			else {
-				s = i/40*50+50;
-				polyFixture.shape.SetAsBox(s / 2 / _g.METER, s / 2 / _g.METER);
-				body.CreateFixture(polyFixture);
-				_g.state.bodies.push(body);
-			}
-		}
+		// for (var i = 0; i < 40; i++) {
+		// 	bodyDef.position.Set(MathUtil.rndRange(0, _g.STAGE_WIDTH) / _g.METER, -MathUtil.rndRange(50, 5000) / _g.METER);
+		// 	var body = _g.state.world.CreateBody(bodyDef);
+		// 	var s;
+		// 	if (i/40 > 0.5) {
+		// 		s = i/40*50+50;
+		// 		circleFixture.shape.SetRadius(s / 2 / _g.METER);
+		// 		body.CreateFixture(circleFixture);
+		// 		_g.state.bodies.push(body);
+		// 	}
+		// 	else {
+		// 		s = i/40*50+50;
+		// 		polyFixture.shape.SetAsBox(s / 2 / _g.METER, s / 2 / _g.METER);
+		// 		body.CreateFixture(polyFixture);
+		// 		_g.state.bodies.push(body);
+		// 	}
+		// }
+
+		_g.addShip({pos: {x: _g.STAGE_WIDTH/2/_g.METER, y: _g.STAGE_HEIGHT/2/_g.METER}});
+
 		setInterval(_g.step.bind(_g), _g.UPDATE_INTERVAL * 1000);
 		setInterval(_g.sync.bind(_g), _g.UPDATE_INTERVAL * 1000 * ARTIFICIAL_LATENCY_FACTOR);
+	},
+	addShip: function (params) {
+		params = params || {};		
+		var _g = this,
+				pos = params.pos || {x: 0, y: 0},
+				body,
+				size;
+
+		_g.definitions.bodyDef.type = Box2D.Dynamics.b2Body.b2_dynamicBody;
+		_g.definitions.bodyDef.position.Set(pos.x, pos.y);
+		body = _g.state.world.CreateBody(_g.definitions.bodyDef);
+
+		size = 50;
+		_g.definitions.circleFixture.shape.SetRadius(size / 2 / _g.METER);
+		body.CreateFixture(_g.definitions.circleFixture);
+
+		_g.state.bodies.push(body);
 	},
 	sync: function () {
 		var _g = this,
