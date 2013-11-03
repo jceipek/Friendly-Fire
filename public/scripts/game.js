@@ -7,8 +7,8 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			stage: null,
 			renderer: null,
 			world: null,
-			bodies: [], // instances of b2Body (from Box2D)
-			actors: []
+			objects: {}, //object id mapping to {body: box2dBody, actor: Pixiobject}
+			my_ship: null
 	};
 
 	var definitions = {
@@ -28,26 +28,31 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			this.registerInput();
 		},
 		registerInput: function () {
-			window.onkeydown = function (e) {
-				console.log("KEY PRESS");
-				var vector = {x: 0, y: 0};
-				if (e.keyCode == 87) {
-					vector.y = -1;
-				}
-				if (e.keyCode == 83){
-					vector.y = 1;
-				}
-				if (e.keyCode == 68) {
-					vector.x = 1;
-				}
-				if (e.keyCode == 65) {
-					vector.x = -1;
-				}
-				if (!(vector.x == 0 && vector.y == 0)) {
-					console.log("EMIT");
-					socket.emit("move", vector);
-				}
+			window.onmousemove = function (e) {
+				var shipPos = state.objects[state.my_ship].body.GetPosition();
+				var destination = {x: e.clientX/METER , y: e.clientY/METER };
+				socket.emit("set_destination", destination)
 			};
+			// window.onkeydown = function (e) {
+			// 	console.log("KEY PRESS");
+			// 	var vector = {x: 0, y: 0};
+			// 	if (e.keyCode == 87) {
+			// 		vector.y = -1;
+			// 	}
+			// 	if (e.keyCode == 83){
+			// 		vector.y = 1;
+			// 	}
+			// 	if (e.keyCode == 68) {
+			// 		vector.x = 1;
+			// 	}
+			// 	if (e.keyCode == 65) {
+			// 		vector.x = -1;
+			// 	}
+			// 	if (!(vector.x == 0 && vector.y == 0)) {
+			// 		//console.log("EMIT");
+			// 		socket.emit("move", vector);
+			// 	}
+			// };
 		},
 		initGraphics: function () {
 			const container = document.createElement("div");
@@ -65,7 +70,18 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 		connectToServer: function () {
 			var address = location.host;
 			socket = io.connect('http://' + address);
+			socket.on('make_objects',this.createObjects);
+			socket.on('assign_ship',this.assignShip);
 			socket.on('update', this.sync.bind(this));
+		},
+		assignShip: function (ship_id){
+			state.my_ship = ship_id;
+		},
+		createObjects: function (objList) {
+			for (i = 0; i < objList.length; i++){
+				var obj = objList[i];
+				this.addShip(obj.id, {type: obj.type});
+			}
 		},
 		onLoadAssets: function () {
 			var gravity = new Box2D.Common.Math.b2Vec2(0, 0);
@@ -76,8 +92,6 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 
 			this.initFixtures();
 
-			this.addShip({pos: {x: STAGE_WIDTH/2/METER, y: STAGE_HEIGHT/2/METER}});
-
 			this.update();
 		},
 		initFixtures: function () {
@@ -85,7 +99,7 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			definitions.circleFixture.density = 1;
 			definitions.circleFixture.restitution = 0.7;
 		},
-		addShip: function (params) {
+		addShip: function (id, params) {
 			params = params || {};
 			var pos = params.pos || {x: 0, y: 0},
 				body,
@@ -106,22 +120,22 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			ship_actor.scale.x = size / METER;
 			ship_actor.scale.y = size / METER;
 
-			state.actors.push(ship_actor);
-			state.bodies.push(body);
+			state.objects[id] = {body: body, actor: ship_actor};
 		},
 		update: function () {
 			requestAnimationFrame(this.update.bind(this));
 			state.world.Step(1 / 60,  3,  3);
 			state.world.ClearForces();
 
-			const n = state.actors.length;
-			for (var i = 0; i < n; i++) {
-				var body  = state.bodies[i];
-				var actor = state.actors[i];
-				var position = body.GetPosition();
-				actor.position.x = position.x * METER;
-				actor.position.y = position.y * METER;
-				actor.rotation = body.GetAngle();
+			for (var o_idx in state.objects) {
+				if (state.objects.hasOwnProperty(o_idx)) {
+					var body  = state.objects[o_idx].body;
+					var actor = state.objects[o_idx].actor;
+					var position = body.GetPosition();
+					actor.position.x = position.x * METER;
+					actor.position.y = position.y * METER;
+					actor.rotation = body.GetAngle();
+				}
 			}
 			state.renderer.render(state.stage);
 		},
@@ -131,8 +145,8 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			}
 			var n = data.length;
 			for (var i = 0; i < n; i++) {
-				var body = state.bodies[i],
-						d = data[i],
+				var d = data[i],
+						body = state.objects[d.id],
 						x = d.x,
 						y = d.y,
 						x_vel = d.x_vel,
