@@ -56,19 +56,19 @@ var game = {
 			_g.initInputHandling(new_socket);
 			var ship_type = 'avenger';
 			var other_objects = [];
-			for (var s in _g.state.players) {
-				if (_g.state.players.hasOwnProperty(s)) {
-					var player = _g.state.players[s];
+			for (var s in state.players) {
+				if (state.players.hasOwnProperty(s)) {
+					var player = state.players[s];
 					other_objects.push({type: ship_type, id: player.ship_id});
 				}
 			}
 			// To new player: create objects that exist on the server
 			new_socket.emit('make_objects', other_objects);
-			var ship_id = this.addShip();
-			players[new_socket.id] = { socket: new_socket, type: ship_type, ship_id: ship_id };
+			var ship_id = _g.addShip();
+			state.players[new_socket.id] = { socket: new_socket, type: ship_type, ship_id: ship_id };
 
 			// To everyone: create a new ship for the new player
-			sockets.emit('make_objects', [{type: ship_type, id: ship_id}]);
+			io.sockets.emit('make_objects', [{type: ship_type, id: ship_id}]);
 
 			// To new player: assign control of the new ship
 			new_socket.emit('assign_ship', ship_id);

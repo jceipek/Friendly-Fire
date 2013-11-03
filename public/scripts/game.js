@@ -70,8 +70,8 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 		connectToServer: function () {
 			var address = location.host;
 			socket = io.connect('http://' + address);
-			socket.on('make_objects',this.createObjects);
-			socket.on('assign_ship',this.assignShip);
+			socket.on('make_objects', this.createObjects.bind(this));
+			socket.on('assign_ship', this.assignShip.bind(this));
 			socket.on('update', this.sync.bind(this));
 		},
 		assignShip: function (ship_id){
@@ -146,7 +146,7 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			var n = data.length;
 			for (var i = 0; i < n; i++) {
 				var d = data[i],
-						body = state.objects[d.id],
+						body = state.objects[d.id].body,
 						x = d.x,
 						y = d.y,
 						x_vel = d.x_vel,
@@ -156,10 +156,13 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 						pos = new Box2D.Common.Math.b2Vec2(x, y)
 						vel = new Box2D.Common.Math.b2Vec2(x_vel, y_vel);
 
-				body.SetPosition(pos);
-				body.SetLinearVelocity(vel);
-				body.SetAngularVelocity(a_vel);
-				body.SetAngle(rot);
+				if (body) {
+					body.SetPosition(pos);
+					body.SetLinearVelocity(vel);
+					body.SetAngularVelocity(a_vel);
+					body.SetAngle(rot);
+				}
+
 			}
 		}
 	};
