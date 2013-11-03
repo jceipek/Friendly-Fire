@@ -41,7 +41,6 @@ var game = {
 		var player = state.players[socket.id];
 		var ship = state.bodies[player.ship_id];
 
-
 		// socket.on('move', function (vector) {
 		// 	var body = state.bodies[players[socket.id].ship_id];
 		// 	body.ApplyForce(new Box2D.Common.Math.b2Vec2(vector.x * 10, vector.y * 10), body.GetWorldCenter());
@@ -65,10 +64,10 @@ var game = {
 			console.log("Connection: ", new_socket.id);
 			var ship_type = 'avenger';
 			var other_objects = [];
-			for (var s in state.players) {
-				if (state.players.hasOwnProperty(s)) {
-					var player = state.players[s];
-					other_objects.push({type: ship_type, id: player.ship_id});
+			for (var obj_idx in state.bodies) {
+				if (state.bodies.hasOwnProperty(obj_idx)) {
+					var obj = state.bodies[obj_idx];
+					other_objects.push({type: obj.entity_type, id: obj_idx});
 				}
 			}
 			// To new player: create objects that exist on the server
@@ -90,10 +89,12 @@ var game = {
 		});
 	},
 	removeObject: function (id) {
+		io.sockets.emit('remove_objects', [id]);
 		state.world.DestroyBody(state.bodies[id]);
 		delete state.bodies[id];
 	},
 	addBullet: function (params) {
+		var _g = this;
 		params = params || {};
 		var pos = params.pos || {x: 0, y: 0},
 			body,
@@ -106,11 +107,11 @@ var game = {
 		size = 5;
 		definitions.circleFixture.shape.SetRadius(size / 2 / PX_PER_METER);
 		body.CreateFixture(definitions.circleFixture);
-
+		body.entity_type = 'bullet';
 		var id = object_tracker;
 		state.bodies[id] = body;
 		object_tracker++;
-		//setTimeout(function () {this.removeObject(id);}, 1000);
+		setTimeout(function () {_g.removeObject(id);}, 5000);
 		return id;
 	},
 	addShip: function (params) {
@@ -126,6 +127,7 @@ var game = {
 		size = 50;
 		definitions.circleFixture.shape.SetRadius(size / 2 / PX_PER_METER);
 		body.CreateFixture(definitions.circleFixture);
+		body.entity_type = 'avenger';
 
 		var id = object_tracker;
 		state.bodies[id] = body;

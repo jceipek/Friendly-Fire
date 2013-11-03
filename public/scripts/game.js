@@ -85,11 +85,20 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			var address = location.host;
 			socket = io.connect('http://' + address);
 			socket.on('make_objects', this.createObjects.bind(this));
+			socket.on('remove_objects', this.removeObjects.bind(this));
 			socket.on('assign_ship', this.assignShip.bind(this));
 			socket.on('update', this.sync.bind(this));
 		},
 		assignShip: function (ship_id){
 			state.my_ship = ship_id;
+		},
+		removeObjects: function (ids) {
+			for (var i = 0; i < ids.length; i++) {
+				var id = ids[i];
+				state.world.DestroyBody(state.objects[id].body);
+				state.stage.removeChild(state.objects[id].actor);
+				delete state.objects[id];
+			}
 		},
 		createObjects: function (objList) {
 			for (i = 0; i < objList.length; i++){
