@@ -25,6 +25,27 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			// create a connection to the server
 			this.connectToServer();
 			this.initGraphics();
+			this.registerInput();
+		},
+		registerInput: function () {
+			window.onkeydown = function (e) {
+				var vector = {x: 0, y: 0};
+				if (e.keyCode == 87) {
+					vector.y = 1;
+				}
+				if (e.keyCode == 83){
+					vector.y = -1;
+				}
+				if (e.keyCode == 68) {
+					vector.x = 1;
+				}
+				if (e.keyCode == 65) {
+					vector.x = -1;
+				}
+				if (!(vector.x == 0 && vector.y == 0)) {
+					socket.emit("move", vector);
+				}
+			};
 		},
 		initGraphics: function () {
 			const container = document.createElement("div");
