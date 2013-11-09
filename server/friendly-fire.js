@@ -36,11 +36,6 @@ var game = {
 		var _g = this;
 		var player = state.players[socket.id];
 		var ship = state.bodies[player.ship_id];
-
-		// socket.on('move', function (vector) {
-		// 	var body = state.bodies[players[socket.id].ship_id];
-		// 	body.ApplyForce(new Box2D.Common.Math.b2Vec2(vector.x * 10, vector.y * 10), body.GetWorldCenter());
-		// });
 		socket.on('set_destination', function (destination) {
 			player.destination = destination;
 		});
@@ -110,23 +105,6 @@ var game = {
 	stepAI: function () {
 		for (var enemy_idx in state.enemies) {
 			if (state.enemies.hasOwnProperty(enemy_idx)) {
-				var v2mult = function(vec, scalar) {
-					return new Box2D.Common.Math.b2Vec2(vec.x * scalar, vec.y * scalar);
-				};
-				var v2add = function(vec1, vec2) {
-					return new Box2D.Common.Math.b2Vec2(vec2.x + vec1.x, vec2.y + vec1.y);
-				};
-				var v2sub = function(vec1, vec2) {
-					return new Box2D.Common.Math.b2Vec2(vec2.x - vec1.x, vec2.y - vec1.y);
-				};
-				var v2norm = function(vec) {
-					var mag = v2mag(vec);
-					return new Box2D.Common.Math.b2Vec2(vec.x / mag, vec.y / mag);
-				};
-				var v2mag = function(vec) {
-					return Mathf.sqrt(vec.x * vec.x + vec.y * vec.y);
-				}
-
 				var enemy_body = state.enemies[enemy_idx];
 				var pos = enemy_body.GetPosition();
 
@@ -134,29 +112,30 @@ var game = {
 				var target = null;
 
 				for (var player_idx in state.players) {
-					/*
 					var player = state.players[player_idx];
-					var distance = v2mag(v2sub(player.GetPosition(), pos));
-					if (distance < minDistance) {
-						target = player.GetPosition();
-						minDistance = distance;
-					}*/
-					var player = state.players[player_idx];
-					target = player.GetPosition();
+					target = state.bodies[player.ship_id].GetPosition().Copy();
 				}
 
-				if (!target) target = pos;
+				if (!target) target = pos.Copy();
 
 				var distanceOffset = 10;
-				//target = v2add(target, v2mult(v2norm(target, pos)), -1 * distanceOffset));
+				var offset = new Box2D.Common.Math.b2Vec2(target.x, target.y);
+				offset.Subtract(pos);
+				offset.Normalize();
+				offset.Multiply(-1 /* distanceOffset*/);
+				target.Add(offset);
 
-				state.bodies[enemy_body.ship_id].destionation = target;
+				if (state.bodies[enemy_idx]) {
+					//console.log("setting destination to: (" + target.x + ", " + target.y  + ")");
+					state.bodies[enemy_idx].destination = target;
+				}
 			}
 		}
 	},
 	step: function () {
 		state.world.Step(UPDATE_INTERVAL, 3, 3);
 		state.world.ClearForces();
+		this.stepAI();
 		for (var player_idx in state.players) {
 			if (state.players.hasOwnProperty(player_idx)) {
 				var player = state.players[player_idx],
@@ -167,10 +146,10 @@ var game = {
 			}
 		}
 		for (var enemy_idx in state.enemies) {
-			if (state.players.hasOwnProperty(enemy_idx)) {
+			if (state.enemies.hasOwnProperty(enemy_idx)) {
 				var enemy = state.enemies[enemy_idx],
 						loc = enemy.destination,
-						ship = state.bodies[enemy.ship_id],
+						ship = state.bodies[enemy_idx],
 						ship_loc = ship.GetPosition();
 				this.updateShip(enemy, loc, ship, ship_loc);
 			}
