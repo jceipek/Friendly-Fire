@@ -237,13 +237,16 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			state.renderer.render(state.stage);
 			state.lastUpdate = (new Date()).getTime();
 		},
-		sync: function(data) {
-			if (!data || state.lastSync > data.timestamp) {
+		sync: function(syncData) {
+			if (!syncData || state.lastSync > syncData.timestamp) {
 				return;
 			}
-			//$('#network-fps').html(Math.round(1000/((new Date()).getTime() - state.lastUpdate)));
+			var data = syncData.data;
+			var timestamp = syncData.timestamp;
+			// console.log(timestamp);
+			$('#network-fps').html(((new Date()).getTime() - timestamp));
 
-			state.lastSync = data.timestamp;
+			state.lastSync = timestamp;
 			var n = data.length;
 			for (var i = 0; i < n; i++) {
 				var d = data[i],

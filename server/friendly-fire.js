@@ -148,8 +148,7 @@ var game = {
 				var position = body.GetPosition();
 				var velocity = body.GetLinearVelocity();
 				var angular_velocity = body.GetAngularVelocity();
-				data.push({ timestamp: (new Date()).getTime(),
-										id: b_idx,
+				data.push({ id: b_idx,
 										x: position.x,
 										y: position.y,
 										rot: body.GetAngle(),
@@ -158,7 +157,8 @@ var game = {
 										a_vel: angular_velocity });
 			}
 		}
-		io.sockets.volatile.emit('update', data);
+		io.sockets.volatile.emit('update', { timestamp: (new Date()).getTime(),
+																			   data: data });
 	},
 	step: function () {
 		state.world.Step(UPDATE_INTERVAL, 3, 3);

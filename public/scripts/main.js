@@ -1,6 +1,7 @@
 "use strict";
 
 require.config({
+	waitSeconds: 500,
 	paths: {
 		zepto: '3rdparty/zepto.min',
 		pixi: '3rdparty/pixi',
