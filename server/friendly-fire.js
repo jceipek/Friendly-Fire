@@ -46,7 +46,7 @@ var game = {
 		});
 		socket.on('fire', function (time) {
 			var pos = ship.GetPosition();
-			var bullet_id = EntityManager.addBullet({pos: {x: pos.x, y: pos.y}, angle: ship.GetAngle(), vel: ship.GetLinearVelocity()});
+			var bullet_id = EntityManager.addBullet({pos: {x: pos.x, y: pos.y}, angle: ship.GetAngle(), ship_vel: ship.GetLinearVelocity()});
 			setTimeout(function () {_g.removeObject(bullet_id);}, 5000);
 			io.sockets.emit('make_objects', [{type: 'bullet', id: bullet_id}]);
 		});
