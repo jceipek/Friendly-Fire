@@ -14,7 +14,6 @@ var state = {
 	enemies: {}
 };
 
-
 var io = null;
 
 var game = {
@@ -50,8 +49,6 @@ var game = {
 			var bullet_id = EntityManager.addBullet({pos: {x: pos.x, y: pos.y}, angle: ship.GetAngle(), vel: ship.GetLinearVelocity()});
 			setTimeout(function () {_g.removeObject(bullet_id);}, 5000);
 			io.sockets.emit('make_objects', [{type: 'bullet', id: bullet_id}]);
-			// var player = state.players[socket.id];
-			// player.special_properties.destination = loc;
 		});
 	},
 	initNetwork: function (server) {
@@ -71,7 +68,7 @@ var game = {
 			// To new player: create objects that exist on the server
 			new_socket.emit('make_objects', other_objects);
 			var ship_id = EntityManager.addShip();
-			state.players[new_socket.id] = { socket: new_socket, type: ship_type, ship_id: ship_id, special_properties: {} };
+			state.players[new_socket.id] = { socket: new_socket, type: ship_type, ship_id: ship_id };
 
 			// To everyone: create a new ship for the new player
 			io.sockets.emit('make_objects', [{type: ship_type, id: ship_id}]);
