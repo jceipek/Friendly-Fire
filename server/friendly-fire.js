@@ -104,15 +104,53 @@ var game = {
 																			   data: data });
 	},
 	removeObject: function (id) {
-    io.sockets.emit('remove_objects', [id]);
-    EntityManager._removeObject(id);
+		io.sockets.emit('remove_objects', [id]);
+		EntityManager._removeObject(id);
 	},
 	stepAI: function () {
 		for (var enemy_idx in state.enemies) {
 			if (state.enemies.hasOwnProperty(enemy_idx)) {
+				var v2mult = function(vec, scalar) {
+					return new Box2D.Common.Math.b2Vec2(vec.x * scalar, vec.y * scalar);
+				};
+				var v2add = function(vec1, vec2) {
+					return new Box2D.Common.Math.b2Vec2(vec2.x + vec1.x, vec2.y + vec1.y);
+				};
+				var v2sub = function(vec1, vec2) {
+					return new Box2D.Common.Math.b2Vec2(vec2.x - vec1.x, vec2.y - vec1.y);
+				};
+				var v2norm = function(vec) {
+					var mag = v2mag(vec);
+					return new Box2D.Common.Math.b2Vec2(vec.x / mag, vec.y / mag);
+				};
+				var v2mag = function(vec) {
+					return Mathf.sqrt(vec.x * vec.x + vec.y * vec.y);
+				}
+
 				var enemy_body = state.enemies[enemy_idx];
 				var pos = enemy_body.GetPosition();
 
+				var minDistance = 99999999;
+				var target = null;
+
+				for (var player_idx in state.players) {
+					/*
+					var player = state.players[player_idx];
+					var distance = v2mag(v2sub(player.GetPosition(), pos));
+					if (distance < minDistance) {
+						target = player.GetPosition();
+						minDistance = distance;
+					}*/
+					var player = state.players[player_idx];
+					target = player.GetPosition();
+				}
+
+				if (!target) target = pos;
+
+				var distanceOffset = 10;
+				//target = v2add(target, v2mult(v2norm(target, pos)), -1 * distanceOffset));
+
+				state.bodies[enemy_body.ship_id].destionation = target;
 			}
 		}
 	},
@@ -125,22 +163,34 @@ var game = {
 						loc = player.destination,
 						ship = state.bodies[player.ship_id],
 						ship_loc = ship.GetPosition();
-				if (loc) {
-					var k = 6,
-							des_angle;
-					vec = new Box2D.Common.Math.b2Vec2((loc.x - ship_loc.x), (loc.y - ship_loc.y));
-					var adjust_angle = vec.Normalize() > 0.2;
-
-					vec = new Box2D.Common.Math.b2Vec2(vec.x * k, vec.y * k);
-					ship.m_linearDamping = 3;
-					des_angle = Math.atan2(vec.x, -vec.y);
-					// var next_angle = (ship.GetAngle() + ship.GetAngularVelocity()) / 3;
-					// var total_rotation = des_angle - next_angle;
-					// ship.ApplyTorque(total_rotation < 0 ? -10 : 10);
-					if (adjust_angle) {ship.SetAngle(des_angle);
-										ship.ApplyForce(vec, ship.GetWorldCenter());}
-				}
+				this.updateShip(player, loc, ship, ship_loc);
 			}
+		}
+		for (var enemy_idx in state.enemies) {
+			if (state.players.hasOwnProperty(enemy_idx)) {
+				var enemy = state.enemies[enemy_idx],
+						loc = enemy.destination,
+						ship = state.bodies[enemy.ship_id],
+						ship_loc = ship.GetPosition();
+				this.updateShip(enemy, loc, ship, ship_loc);
+			}
+		}
+	},
+	updateShip: function(player, loc, ship, ship_loc) {
+		if (loc) {
+			var k = 6,
+					des_angle;
+			vec = new Box2D.Common.Math.b2Vec2((loc.x - ship_loc.x), (loc.y - ship_loc.y));
+			var adjust_angle = vec.Normalize() > 0.2;
+
+			vec = new Box2D.Common.Math.b2Vec2(vec.x * k, vec.y * k);
+			ship.m_linearDamping = 3;
+			des_angle = Math.atan2(vec.x, -vec.y);
+			// var next_angle = (ship.GetAngle() + ship.GetAngularVelocity()) / 3;
+			// var total_rotation = des_angle - next_angle;
+			// ship.ApplyTorque(total_rotation < 0 ? -10 : 10);
+			if (adjust_angle) {ship.SetAngle(des_angle);
+								ship.ApplyForce(vec, ship.GetWorldCenter());}
 		}
 	}
 };
