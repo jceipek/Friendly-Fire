@@ -218,7 +218,7 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			var data = syncData.data;
 			var timestamp = syncData.timestamp;
 			// console.log(timestamp);
-			$('#network-fps').html(Math.round(1000/((new Date()).getTime() - timestamp)));
+			$('#network-fps').html(((new Date()).getTime() - timestamp));
 
 			state.lastSync = timestamp;
 			var n = data.length;
