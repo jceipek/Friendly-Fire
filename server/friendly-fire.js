@@ -1,24 +1,21 @@
-var socketio = require('socket.io');
 var Box2D = require('box2dweb');
+var socketio = require('socket.io');
 var MathUtil = require('./math_helpers');
+var EntityManager = require('./entity_creator');
 
 const ARTIFICIAL_LATENCY_FACTOR = 1; // Make it 1 for no fake latency
 const UPDATE_INTERVAL = 1/60;
 const STAGE_WIDTH = 1000; // px
 const STAGE_HEIGHT = 900; // px
-const PX_PER_METER = 100; // conversion
 var state = {
 	world: null,
 	bodies: {}, // instances of b2Body (from Box2D)
-	players: {}
+	players: {},
+	enemies: {}
 };
-var definitions = {
-	polyFixture: new Box2D.Dynamics.b2FixtureDef(),
-	circleFixture: new Box2D.Dynamics.b2FixtureDef(),
-	bodyDef: new Box2D.Dynamics.b2BodyDef()
-};
+
+
 var io = null;
-var object_tracker = 0; // Increments every time a new object is added
 
 var game = {
 	init: function (server) {
@@ -26,15 +23,15 @@ var game = {
 		var gravity = new Box2D.Common.Math.b2Vec2(0, 0);
 		state.world = new Box2D.Dynamics.b2World(gravity,  true);
 
-		this.initFixtures();
+		EntityManager.initWithState(state);
 
 		setInterval(this.step.bind(this), UPDATE_INTERVAL * 1000);
 		setInterval(this.sync.bind(this), UPDATE_INTERVAL * 1000 * ARTIFICIAL_LATENCY_FACTOR);
-	},
-	initFixtures: function () {
-		definitions.circleFixture.shape = new Box2D.Collision.Shapes.b2CircleShape();
-		definitions.circleFixture.density = 1;
-		definitions.circleFixture.restitution = 0.7;
+
+		for (var i = 0; i < 5; i++) {
+			var enemyID = EntityManager.addShip({type: 'enemy', pos: {x: 2, y: 2}});
+			state.enemies[enemyID] = state.bodies[enemyID];
+		}
 	},
 	initInputHandling: function (socket) {
 		var _g = this;
@@ -50,7 +47,8 @@ var game = {
 		});
 		socket.on('fire', function (time) {
 			var pos = ship.GetPosition();
-			var bullet_id = _g.addBullet({pos: {x: pos.x, y: pos.y}, angle: ship.GetAngle(), vel: ship.GetLinearVelocity()});
+			var bullet_id = EntityManager.addBullet({pos: {x: pos.x, y: pos.y}, angle: ship.GetAngle(), vel: ship.GetLinearVelocity()});
+			setTimeout(function () {_g.removeObject(bullet_id);}, 5000);
 			io.sockets.emit('make_objects', [{type: 'bullet', id: bullet_id}]);
 			// var player = state.players[socket.id];
 			// player.special_properties.destination = loc;
@@ -72,7 +70,7 @@ var game = {
 			}
 			// To new player: create objects that exist on the server
 			new_socket.emit('make_objects', other_objects);
-			var ship_id = _g.addShip();
+			var ship_id = EntityManager.addShip();
 			state.players[new_socket.id] = { socket: new_socket, type: ship_type, ship_id: ship_id, special_properties: {} };
 
 			// To everyone: create a new ship for the new player
@@ -87,58 +85,6 @@ var game = {
 				delete state.players[new_socket.id];
 			});
 		});
-	},
-	removeObject: function (id) {
-		io.sockets.emit('remove_objects', [id]);
-		state.world.DestroyBody(state.bodies[id]);
-		delete state.bodies[id];
-	},
-	addBullet: function (params) {
-		var _g = this;
-		params = params || {};
-		var pos = params.pos || {x: 0, y: 0},
-				angle = params.angle || 0,
-				ship_vel = params.vel || {x: 0, y: 0},
-				body,
-				size;
-		var vec = new Box2D.Common.Math.b2Vec2(Math.sin(angle), -Math.cos(angle));
-		var vel = new Box2D.Common.Math.b2Vec2(vec.x * 5 + ship_vel.x, vec.y * 5 + ship_vel.y);
-
-		definitions.bodyDef.type = Box2D.Dynamics.b2Body.b2_dynamicBody;
-		definitions.bodyDef.position.Set(pos.x + vec.x * 0.3, pos.y + vec.y * 0.3);
-		body = state.world.CreateBody(definitions.bodyDef);
-
-		size = 5;
-		definitions.circleFixture.shape.SetRadius(size / 2 / PX_PER_METER);
-		body.CreateFixture(definitions.circleFixture);
-		body.SetAngle(angle);
-		body.SetLinearVelocity(vel);
-		body.entity_type = 'bullet';
-		var id = object_tracker;
-		state.bodies[id] = body;
-		object_tracker++;
-		setTimeout(function () {_g.removeObject(id);}, 5000);
-		return id;
-	},
-	addShip: function (params) {
-		params = params || {};
-		var pos = params.pos || {x: 0, y: 0},
-			body,
-			size;
-
-		definitions.bodyDef.type = Box2D.Dynamics.b2Body.b2_dynamicBody;
-		definitions.bodyDef.position.Set(pos.x, pos.y);
-		body = state.world.CreateBody(definitions.bodyDef);
-
-		size = 50;
-		definitions.circleFixture.shape.SetRadius(size / 2 / PX_PER_METER);
-		body.CreateFixture(definitions.circleFixture);
-		body.entity_type = 'avenger';
-
-		var id = object_tracker;
-		state.bodies[id] = body;
-		object_tracker++;
-		return id;
 	},
 	sync: function () {
 		var data = [];
@@ -159,6 +105,19 @@ var game = {
 		}
 		io.sockets.volatile.emit('update', { timestamp: (new Date()).getTime(),
 																			   data: data });
+	},
+	removeObject: function (id) {
+    io.sockets.emit('remove_objects', [id]);
+    EntityManager._removeObject(id);
+	},
+	stepAI: function () {
+		for (var enemy_idx in state.enemies) {
+			if (state.enemies.hasOwnProperty(enemy_idx)) {
+				var enemy_body = state.enemies[enemy_idx];
+				var pos = enemy_body.GetPosition();
+
+			}
+		}
 	},
 	step: function () {
 		state.world.Step(UPDATE_INTERVAL, 3, 3);
@@ -189,4 +148,4 @@ var game = {
 	}
 };
 
-module.exports = game
+module.exports = game;
