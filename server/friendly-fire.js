@@ -148,7 +148,8 @@ var game = {
 				var position = body.GetPosition();
 				var velocity = body.GetLinearVelocity();
 				var angular_velocity = body.GetAngularVelocity();
-				data.push({ id: b_idx,
+				data.push({ timestamp: (new Date()).getTime(),
+										id: b_idx,
 										x: position.x,
 										y: position.y,
 										rot: body.GetAngle(),

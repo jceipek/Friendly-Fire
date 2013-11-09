@@ -8,7 +8,9 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			renderer: null,
 			world: null,
 			objects: {}, //object id mapping to {body: box2dBody, actor: Pixiobject}
-			my_ship: null
+			my_ship: null,
+			lastSync: 0, // Time of last sync
+			lastUpdate: 0
 	};
 
 	var definitions = {
@@ -94,9 +96,9 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 				state.renderer.resize(stage_width, stage_height);
 			});
 
-			const loader = new PIXI.AssetLoader(["assets/ball.png",
-				"assets/avenger.png",
-				"assets/bullet.png"]);
+			const loader = new PIXI.AssetLoader(
+				["assets/avenger.png",
+				 "assets/bullet.png"]);
 			loader.onComplete = this.onLoadAssets.bind(this);
 			loader.load();
 		},
@@ -154,7 +156,6 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			definitions.bodyDef.type = Box2D.Dynamics.b2Body.b2_dynamicBody;
 			definitions.bodyDef.position.Set(pos.x, pos.y);
 			body = state.world.CreateBody(definitions.bodyDef);
-			// debugger;
 			size = 50;
 			definitions.circleFixture.shape.SetRadius(size / 2 / METER);
 			body.CreateFixture(definitions.circleFixture);
@@ -193,7 +194,9 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 		update: function () {
 			requestAnimationFrame(this.update.bind(this));
 			state.world.Step(1 / 60,  3,  3);
-			state.world.ClearForces();
+			//state.world.ClearForces();
+
+			$('#fps').html(Math.round(1000/((new Date()).getTime() - state.lastUpdate)));
 
 			for (var o_idx in state.objects) {
 				if (state.objects.hasOwnProperty(o_idx)) {
@@ -206,11 +209,15 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 				}
 			}
 			state.renderer.render(state.stage);
+			state.lastUpdate = (new Date()).getTime();
 		},
 		sync: function(data) {
-			if (!data) {
+			if (!data || state.lastSync > data.timestamp) {
 				return;
 			}
+			//$('#network-fps').html(Math.round(1000/((new Date()).getTime() - state.lastUpdate)));
+
+			state.lastSync = data.timestamp;
 			var n = data.length;
 			for (var i = 0; i < n; i++) {
 				var d = data[i],
