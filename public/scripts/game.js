@@ -119,6 +119,7 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 				state.world.DestroyBody(state.objects[id].body);
 				state.stage.removeChild(state.objects[id].actor);
 				state.stage.removeChild(state.objects[id].debug);
+				console.log(state.objects[id].debug);
 
 				delete state.objects[id];
 			}
@@ -145,9 +146,19 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			this.update();
 		},
 		initFixtures: function () {
-			definitions.circleFixture.shape = new Box2D.Collision.Shapes.b2CircleShape();
+			definitions.circleFixture.shape = new Box2D.Collision.Shapes.b2CircleShape()
 			definitions.circleFixture.density = 1;
 			definitions.circleFixture.restitution = 0.7;
+
+			definitions.polyFixture.shape = new Box2D.Collision.Shapes.b2PolygonShape();
+			definitions.polyFixture.density = 1;
+			definitions.polyFixture.restitution = 0.7;
+			definitions.polyFixture.shape.SetAsArray([
+				new Box2D.Common.Math.b2Vec2(0, -25 * 100),
+				new Box2D.Common.Math.b2Vec2(20 * 100, 28 * 100),
+				new Box2D.Common.Math.b2Vec2(-20 * 100, 28 * 100)
+				]);
+			
 		},
 		addShip: function (id, params) {
 			params = params || {};
@@ -158,9 +169,11 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			definitions.bodyDef.type = Box2D.Dynamics.b2Body.b2_dynamicBody;
 			definitions.bodyDef.position.Set(pos.x, pos.y);
 			body = state.world.CreateBody(definitions.bodyDef);
-			size = 50;
-			definitions.circleFixture.shape.SetRadius(size / 2 / METER);
-			body.CreateFixture(definitions.circleFixture);
+			size = 50;	 
+
+
+			//definitions.circleFixture.shape.SetRadius(size / 2 / METER);
+			body.CreateFixture(definitions.polyFixture);
 
 			var ship_actor = new PIXI.Sprite(PIXI.Texture.fromFrame("assets/avenger.png"));
 			state.stage.addChild(ship_actor);
@@ -175,10 +188,28 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			debug_frame.lineStyle(1, 0x000000, 1);
 			
 			// draw a shape
-			debug_frame.moveTo(0, -25);
-			debug_frame.lineTo(20, 28);
-			debug_frame.lineTo(-20, 28);
-			debug_frame.lineTo(0, -25);
+			var points=definitions.polyFixture.shape.m_vertices;
+			var len_points=points.length;
+
+			// if (len_points>=1){debug_frame.moveTo(points[0]);}
+			// if (len_points>=2)
+			// {
+			// 	var vert;
+			// 	for (i=1; i<len_points; i++){
+			// 		vert=points[i];
+			// 		debug_frame.lineTo(vert.x/METER, vert.y/METER);
+			// 	}				
+			// } 
+
+
+			for (var i = 0; i < definitions.polyFixture.shape.m_vertices.length; i++) {
+				var fn, vert;
+				if (i == 0) {fn = 'moveTo';} else {fn = 'lineTo'}
+				vert = definitions.polyFixture.shape.m_vertices[i];
+				debug_frame[fn](vert.x/METER, vert.y/METER);
+				console.log(vert.x/METER, vert.y/METER);
+			}
+
 			//debug_frame.endFill();
 
 			state.stage.addChild(debug_frame);
@@ -196,6 +227,7 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			definitions.bodyDef.position.Set(pos.x, pos.y);
 			body = state.world.CreateBody(definitions.bodyDef);
 			size = 5;
+
 			definitions.circleFixture.shape.SetRadius(size / 2 / METER);
 			body.CreateFixture(definitions.circleFixture);
 
@@ -274,5 +306,6 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 	};
 
 	window.game = game;
+	window.definitions = definitions;
 	return game;
 });

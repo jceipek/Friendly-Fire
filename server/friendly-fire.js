@@ -32,9 +32,20 @@ var game = {
 		setInterval(this.sync.bind(this), UPDATE_INTERVAL * 1000 * ARTIFICIAL_LATENCY_FACTOR);
 	},
 	initFixtures: function () {
-		definitions.circleFixture.shape = new Box2D.Collision.Shapes.b2CircleShape();
+		// console.log(Box2D.Collision.Shapes);
+		definitions.circleFixture.shape = new Box2D.Collision.Shapes.b2CircleShape()
 		definitions.circleFixture.density = 1;
 		definitions.circleFixture.restitution = 0.7;
+
+		definitions.polyFixture.shape = new Box2D.Collision.Shapes.b2PolygonShape();
+		definitions.polyFixture.density = 1;
+		definitions.polyFixture.restitution = 0.7;
+		definitions.polyFixture.shape.SetAsArray([
+			new Box2D.Common.Math.b2Vec2(0, -25 / 100),
+			new Box2D.Common.Math.b2Vec2(20 / 100, 28 / 100),
+			new Box2D.Common.Math.b2Vec2(-20 / 100, 28 / 100)
+			]);
+
 	},
 	initInputHandling: function (socket) {
 		var _g = this;
@@ -105,7 +116,7 @@ var game = {
 		var vel = new Box2D.Common.Math.b2Vec2(vec.x * 5 + ship_vel.x, vec.y * 5 + ship_vel.y);
 
 		definitions.bodyDef.type = Box2D.Dynamics.b2Body.b2_dynamicBody;
-		definitions.bodyDef.position.Set(pos.x + vec.x * 0.3, pos.y + vec.y * 0.3);
+		definitions.bodyDef.position.Set(pos.x + vec.x * 1, pos.y + vec.y * 1);
 		body = state.world.CreateBody(definitions.bodyDef);
 
 		size = 5;
@@ -131,8 +142,8 @@ var game = {
 		body = state.world.CreateBody(definitions.bodyDef);
 
 		size = 50;
-		definitions.circleFixture.shape.SetRadius(size / 2 / PX_PER_METER);
-		body.CreateFixture(definitions.circleFixture);
+		//definitions.circleFixture.shape.SetRadius(size / 2 / PX_PER_METER);
+		body.CreateFixture(definitions.polyFixture);
 		body.entity_type = 'avenger';
 
 		var id = object_tracker;
