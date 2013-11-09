@@ -26,7 +26,6 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 
 		init: function () {
 			// create a connection to the server
-			this.connectToServer();
 			this.initGraphics();
 			this.registerInput();
 		},
@@ -149,6 +148,7 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 
 			this.update();
 			setInterval(this.physicsUpdate.bind(this), UPDATE_INTERVAL * 1000);
+			this.connectToServer();
 		},
 		initFixtures: function () {
 			definitions.circleFixture.shape = new Box2D.Collision.Shapes.b2CircleShape();
@@ -178,7 +178,6 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 
 			var debug_frame = new PIXI.Graphics();
 
-			//debug_frame.beginFill(0xFF3300);
 			debug_frame.lineStyle(1, 0x000000, 1);
 
 			// draw a shape
