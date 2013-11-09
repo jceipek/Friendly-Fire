@@ -2,6 +2,7 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 	var stage_width = window.innerWidth;
 	var stage_height = window.innerHeight;
 	const METER = 100;
+	const UPDATE_INTERVAL = 1/60;
 
 	var state = {
 			stage: null,
@@ -141,6 +142,7 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			this.initFixtures();
 
 			this.update();
+			setInterval(this.physicsUpdate.bind(this), UPDATE_INTERVAL * 1000);
 		},
 		initFixtures: function () {
 			definitions.circleFixture.shape = new Box2D.Collision.Shapes.b2CircleShape();
@@ -191,9 +193,11 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 
 			state.objects[id] = {body: body, actor: bullet_actor};
 		},
+		physicsUpdate: function () {
+			state.world.Step(1 / 60,  3,  3);
+		},
 		update: function () {
 			requestAnimationFrame(this.update.bind(this));
-			state.world.Step(1 / 60,  3,  3);
 			//state.world.ClearForces();
 
 			$('#fps').html(Math.round(1000/((new Date()).getTime() - state.lastUpdate)));
