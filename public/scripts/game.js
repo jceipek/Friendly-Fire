@@ -7,7 +7,7 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			stage: null,
 			renderer: null,
 			world: null,
-			objects: {}, //object id mapping to {body: box2dBody, actor: Pixiobject}
+			objects: {}, //object id mapping to {body: box2dBody, actor: Pixiobject,debug: Pixiobject}
 			my_ship: null,
 			lastSync: 0, // Time of last sync
 			lastUpdate: 0
@@ -118,6 +118,8 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 				var id = ids[i];
 				state.world.DestroyBody(state.objects[id].body);
 				state.stage.removeChild(state.objects[id].actor);
+				state.stage.removeChild(state.objects[id].debug);
+
 				delete state.objects[id];
 			}
 		},
@@ -167,7 +169,22 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			ship_actor.scale.x = size / METER;
 			ship_actor.scale.y = size / METER;
 
-			state.objects[id] = {body: body, actor: ship_actor};
+			var debug_frame = new PIXI.Graphics();
+			
+			//debug_frame.beginFill(0xFF3300);
+			debug_frame.lineStyle(1, 0x000000, 1);
+			
+			// draw a shape
+			debug_frame.moveTo(0, -25);
+			debug_frame.lineTo(20, 28);
+			debug_frame.lineTo(-20, 28);
+			debug_frame.lineTo(0, -25);
+			//debug_frame.endFill();
+
+			state.stage.addChild(debug_frame);
+			//debug_frame.anchor.x = debug_frame.anchor.y = 0.5;
+
+			state.objects[id] = {body: body, actor: ship_actor, debug:debug_frame};
 		},
 		addBullet: function (id, params) {
 			params = params || {};
@@ -185,11 +202,15 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			var bullet_actor = new PIXI.Sprite(PIXI.Texture.fromFrame("assets/bullet.png"));
 			state.stage.addChild(bullet_actor);
 
+			var debug_frame = new PIXI.Sprite(PIXI.Texture.fromFrame("assets/bullet.png"));
+
 			bullet_actor.anchor.x = bullet_actor.anchor.y = 0.5;
+
+			debug_frame.anchor.x = debug_frame.anchor.y = 0.5;
 			//bullet_actor.scale.x = size / METER;
 			//bullet_actor.scale.y = size / METER;
 
-			state.objects[id] = {body: body, actor: bullet_actor};
+			state.objects[id] = {body: body, actor: bullet_actor, debug:debug_frame};
 		},
 		update: function () {
 			requestAnimationFrame(this.update.bind(this));
@@ -202,10 +223,15 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 				if (state.objects.hasOwnProperty(o_idx)) {
 					var body  = state.objects[o_idx].body;
 					var actor = state.objects[o_idx].actor;
+					var debug_frame= state.objects[o_idx].debug;
 					var position = body.GetPosition();
 					actor.position.x = position.x * METER;
 					actor.position.y = position.y * METER;
 					actor.rotation = body.GetAngle();
+
+					debug_frame.position.x = position.x * METER;
+					debug_frame.position.y = position.y * METER;
+					debug_frame.rotation = body.GetAngle();
 				}
 			}
 			state.renderer.render(state.stage);
