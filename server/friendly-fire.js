@@ -157,7 +157,7 @@ var game = {
 										a_vel: angular_velocity });
 			}
 		}
-		io.sockets.emit('update', data);
+		io.sockets.volatile.emit('update', data);
 	},
 	step: function () {
 		state.world.Step(UPDATE_INTERVAL, 3, 3);
@@ -169,10 +169,10 @@ var game = {
 						ship = state.bodies[player.ship_id],
 						ship_loc = ship.GetPosition();
 				if (loc) {
-					var k = 4,
+					var k = 6,
 							des_angle;
 					vec = new Box2D.Common.Math.b2Vec2((loc.x - ship_loc.x), (loc.y - ship_loc.y));
-					vec.Normalize();
+					var adjust_angle = vec.Normalize() > 0.2;
 
 					vec = new Box2D.Common.Math.b2Vec2(vec.x * k, vec.y * k);
 					ship.m_linearDamping = 3;
@@ -180,8 +180,8 @@ var game = {
 					// var next_angle = (ship.GetAngle() + ship.GetAngularVelocity()) / 3;
 					// var total_rotation = des_angle - next_angle;
 					// ship.ApplyTorque(total_rotation < 0 ? -10 : 10);
-					ship.SetAngle(des_angle);
-					ship.ApplyForce(vec, ship.GetWorldCenter());
+					if (adjust_angle) {ship.SetAngle(des_angle);
+										ship.ApplyForce(vec, ship.GetWorldCenter());}
 				}
 			}
 		}

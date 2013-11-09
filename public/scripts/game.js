@@ -28,18 +28,37 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			this.registerInput();
 		},
 		registerInput: function () {
+			window.ontouchmove = function (e) {
+				var touch = e.targetTouches[0];
+				if (state.my_ship) {
+					var shipPos = state.objects[state.my_ship].body.GetPosition();
+					var destination = {x: touch.clientX/METER , y: touch.clientY/METER };
+					socket.emit("set_destination", destination);
+				}
+				e.preventDefault();
+				return false;
+			};
 			window.onmousemove = function (e) {
 				if (state.my_ship) {
 					var shipPos = state.objects[state.my_ship].body.GetPosition();
 					var destination = {x: e.clientX/METER , y: e.clientY/METER };
 					socket.emit("set_destination", destination);
 				}
-
+				e.preventDefault();
+				return false;
 			};
 			window.onmousedown = function (e) {
 				// var shipPos = state.objects[state.my_ship].body.GetPosition();
 				// var destination = {x: e.clientX/METER , y: e.clientY/METER };
 				socket.emit("fire", new Date());
+				e.preventDefault();
+			};
+			window.ontouchstart = function (e) {
+				console.log("touch");
+				// var shipPos = state.objects[state.my_ship].body.GetPosition();
+				// var destination = {x: e.clientX/METER , y: e.clientY/METER };
+				socket.emit("fire", new Date());
+				e.preventDefault();
 			};
 			// window.onkeydown = function (e) {
 			// 	console.log("KEY PRESS");
