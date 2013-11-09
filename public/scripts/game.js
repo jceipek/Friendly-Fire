@@ -134,7 +134,7 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 		onLoadAssets: function () {
 			var gravity = new Box2D.Common.Math.b2Vec2(0, 0);
 
-			//this.sync();
+			this.sync();
 
 			state.world = new Box2D.Dynamics.b2World(gravity,  true);
 
@@ -212,12 +212,12 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			state.lastUpdate = (new Date()).getTime();
 		},
 		sync: function(syncData) {
-			var data = syncData.data;
-			var timestamp = syncData.timestamp;
-			if (!data || state.lastSync > data.timestamp) {
+			if (!syncData || state.lastSync > syncData.timestamp) {
 				return;
 			}
-			console.log(timestamp);
+			var data = syncData.data;
+			var timestamp = syncData.timestamp;
+			// console.log(timestamp);
 			$('#network-fps').html(Math.round(1000/((new Date()).getTime() - timestamp)));
 
 			state.lastSync = timestamp;
