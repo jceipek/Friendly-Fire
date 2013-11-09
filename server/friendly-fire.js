@@ -36,11 +36,6 @@ var game = {
 		var _g = this;
 		var player = state.players[socket.id];
 		var ship = state.bodies[player.ship_id];
-
-		// socket.on('move', function (vector) {
-		// 	var body = state.bodies[players[socket.id].ship_id];
-		// 	body.ApplyForce(new Box2D.Common.Math.b2Vec2(vector.x * 10, vector.y * 10), body.GetWorldCenter());
-		// });
 		socket.on('set_destination', function (destination) {
 			player.destination = destination;
 		});
@@ -134,9 +129,6 @@ var game = {
 					vec = new Box2D.Common.Math.b2Vec2(vec.x * k, vec.y * k);
 					ship.m_linearDamping = 3;
 					des_angle = Math.atan2(vec.x, -vec.y);
-					// var next_angle = (ship.GetAngle() + ship.GetAngularVelocity()) / 3;
-					// var total_rotation = des_angle - next_angle;
-					// ship.ApplyTorque(total_rotation < 0 ? -10 : 10);
 					if (adjust_angle) {ship.SetAngle(des_angle);
 										ship.ApplyForce(vec, ship.GetWorldCenter());}
 				}
