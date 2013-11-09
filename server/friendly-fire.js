@@ -128,7 +128,30 @@ var game = {
 				if (state.bodies[enemy_idx]) {
 					//console.log("setting destination to: (" + target.x + ", " + target.y  + ")");
 					state.bodies[enemy_idx].destination = target;
+
+					var dest = state.bodies[enemy_idx].destination;
+					var toDest = dest.Copy();
+				   	toDest.Subtract(pos);
+					toDest.Normalize();
+					var dir = state.bodies[enemy_idx].GetLinearVelocity().Copy();
+					dir.Normalize();
+					var dotp = dir.x * toDest.x + dir.y * toDest.y;
+					var angle = Math.acos(dotp);
+					var fov = 0.349;
+
+					var fireDelta = 500;
+					if (Math.abs(angle) < fov) {
+						var now = (new Date()).getTime();
+						if (!enemy_body.lastfiredTime || (now - enemy_body.lastfiredTime) >= fireDelta) {
+							enemy_body.lastfiredTime = now;
+							var bullet_id = EntityManager.addBullet({pos: {x: pos.x, y: pos.y}, angle: state.bodies[enemy_idx].GetAngle(), ship_vel: state.bodies[enemy_idx].GetLinearVelocity(), bullet_speed: 10});
+							var t = this;
+							//setTimeout(function () { t.removeObject(bullet_id);}, 5000);
+							io.sockets.emit('make_objects', [{type: 'bullet', id: bullet_id}]);
+						}
+					}
 				}
+
 			}
 		}
 	},
