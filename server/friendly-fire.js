@@ -63,15 +63,15 @@ var game = {
 		for (var i = 0; i < SongAnalysis.beats.length; i++) {
 			var beat = SongAnalysis.beats[i];
 			setTimeout(function () {
-				console.log("BEAT");
-				_g.fireAI();
+				// console.log("BEAT");
+				_g.fireAI(this);
 			}, beat.start*1000);
 		}
 		for (var i = 0; i < SongAnalysis.bars.length; i++) {
 			var bar = SongAnalysis.bars[i];
 			if (bar.confidence > 0.1) {
 					setTimeout(function () {
-						console.log("BAR");
+						// console.log("BAR");
 						var enemyID = EntityManager.addShip({type: 'enemy', pos: {x: 2, y: 2}});
 						io.sockets.emit('make_objects', [{type: 'enemy', id: enemyID}]);
 						state.enemies[enemyID] = state.bodies[enemyID];
@@ -179,7 +179,7 @@ var game = {
 					                                       bullet_speed: 15,
 					                                     	 bullet_class: 'enemy'});
 				var t = this;
-				setTimeout(function (bullet_id, t) {t.removeObject(bullet_id);}, 2000, bullet_id, this);
+				setTimeout(function (bullet_id) {t.removeObject(bullet_id);}, 2000, bullet_id);
 				//setTimeout(function () {t.removeObject(bullet_id);}, 5000); // Crashes for some strange version
 				bullets.push({type: 'bullet', id: bullet_id});
 			}
@@ -187,6 +187,7 @@ var game = {
 		io.sockets.emit('make_objects', bullets);
 	},
 	stepAI: function () {
+
 		for (var enemy_idx in state.enemies) {
 			if (state.enemies.hasOwnProperty(enemy_idx)) {
 				var enemy_body = state.enemies[enemy_idx];

@@ -207,21 +207,21 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio', 'audia'], function
 			ship_actor.scale.x = size / METER;
 			ship_actor.scale.y = size / METER;
 
-			var debug_frame = new PIXI.Graphics();
+			// var debug_frame = new PIXI.Graphics();
 
-			debug_frame.lineStyle(1, 0x000000, 1);
+			// debug_frame.lineStyle(1, 0x000000, 1);
 
 			// draw a shape
-			debug_frame.moveTo(0, -25);
-			debug_frame.lineTo(20, 28);
-			debug_frame.lineTo(-20, 28);
-			debug_frame.lineTo(0, -25);
-			//debug_frame.endFill();
+			// debug_frame.moveTo(0, -25);
+			// debug_frame.lineTo(20, 28);
+			// debug_frame.lineTo(-20, 28);
+			// debug_frame.lineTo(0, -25);
 
-			state.stage.addChild(debug_frame);
+			// state.stage.addChild(debug_frame);
 			//debug_frame.anchor.x = debug_frame.anchor.y = 0.5;
 
-			state.objects[id] = {body: body, actor: ship_actor, debug:debug_frame};
+			//state.objects[id] = {body: body, actor: ship_actor, debug:debug_frame};
+			state.objects[id] = {body: body, actor: ship_actor, debug:null};
 		},
 		addBullet: function (id, params) {
 			params = params || {};

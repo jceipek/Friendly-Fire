@@ -88,6 +88,11 @@ var creator = {
     }
     state.world.DestroyBody(state.bodies[id]);
     delete state.bodies[id];
+
+    if (!state.enemies[id]) {
+      return;
+    }
+    delete state.enemies[id];
   },
 }
 
