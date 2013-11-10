@@ -20,7 +20,8 @@ var state = {
 	song_segment_idx: 0,
 	song_bar_idx: 0,
 	last_jump_back: (new Date()).getTime(),
-	to_delete: []
+	to_delete: [],
+	crazy_timeout: []
 };
 
 var io = null;
@@ -37,21 +38,17 @@ var game = {
 			var entity2 = contact.GetFixtureB().GetBody().GetUserData();
 			// bullet class is by whom the shot was fired
 
-			if (entity1.entity_type === 'avenger' || entity2.entity_type === 'avenger') {
-				console.log("HELP");
-			}
-
 			if (entity1.entity_type === 'bullet' &&
 				  entity1.bullet_class === 'enemy' &&
 				  entity2.entity_type === 'avenger') {
-				console.log("JUMP BACK");
+				// console.log("JUMP BACK");
 					_g.jumpMusicBack(-2000);
 			}
 
 			if (entity2.entity_type === 'bullet' &&
 				  entity2.bullet_class === 'enemy' &&
 				  entity1.entity_type === 'avenger') {
-				console.log("JUMP BACK");
+				// console.log("JUMP BACK");
 					_g.jumpMusicBack(-2000);
 			}
 
@@ -128,11 +125,14 @@ var game = {
 	},
 	jumpMusicBack: function (time) {
 		if ((new Date()).getTime() - state.last_jump_back < 2000) {
-			console.log("Avoid jumpback");
+			//console.log("Avoid jumpback");
 			return;
 		}
 
 		state.last_jump_back = (new Date()).getTime();
+		while (state.crazy_timeout.length > 0) {
+			clearInterval(state.crazy_timeout.pop());
+		}
 
 		state.song_start_time -= time;
 		state.song_time_ms -= time;
@@ -251,7 +251,7 @@ var game = {
 					                                       bullet_speed: 15,
 					                                     	 bullet_class: 'enemy'});
 				var t = this;
-				setTimeout(function (bullet_id) {t.removeObject(bullet_id);}, 2000, bullet_id);
+				setTimeout(function (bullet_id) {t.removeObject(bullet_id);}, 2000, [bullet_id]);
 				//setTimeout(function () {t.removeObject(bullet_id);}, 5000); // Crashes for some strange version
 				bullets.push({type: 'bullet', id: bullet_id});
 			}
@@ -260,16 +260,17 @@ var game = {
 	},
 	stepMusic: function () {
 		state.song_time_ms = (new Date()).getTime() - state.song_start_time;
-		var curr_segment = SongAnalysis.segments[state.song_segment_idx];
-		var next_segment = SongAnalysis.segments[state.song_segment_idx + 1];
-		if (curr_segment) {
-			if (curr_segment.start*1000 < state.song_time_ms) {
-				state.song_segment_idx++;
+		console.log(state.song_beat_idx);
+		var curr_beat = SongAnalysis.beats[state.song_beat_idx];
+		var next_beat = SongAnalysis.beats[state.song_beat_idx + 1];
+		if (curr_beat) {
+			if (curr_beat.start*1000 < state.song_time_ms) {
+				state.song_beat_idx++;
 			}
-			if (next_segment && (next_segment.start > curr_segment.start)) {
-				var diff = next_segment.start*1000 - state.song_time_ms;
-				setTimeout(this.fireAI.bind(this), diff);
-				state.song_segment_idx++;
+			if (next_beat && (next_beat.start > curr_beat.start)) {
+				var diff = next_beat.start*1000 - state.song_time_ms;
+				state.crazy_timeout.push(setTimeout(this.fireAI.bind(this), diff));
+				state.song_beat_idx++;
 			}
 		}
 
@@ -284,11 +285,11 @@ var game = {
 			if (next_bar && (next_bar.start > curr_bar.start)) {
 				var diff = next_bar.start*1000 - state.song_time_ms;
 				if (next_bar.confidence > 0.0) {
-					setTimeout(function () {
+					state.crazy_timeout.push(setTimeout(function () {
 							var enemyID = EntityManager.addShip({type: 'enemy', pos: {x: 2, y: 2}});
 							io.sockets.emit('make_objects', [{type: 'enemy', id: enemyID}]);
 							state.enemies[enemyID] = state.bodies[enemyID];
-					}, diff);
+					}, diff));
 				}
 				state.song_bar_idx++;
 			}
