@@ -2,6 +2,7 @@ var Box2D = require('box2dweb');
 var socketio = require('socket.io');
 var MathUtil = require('./math_helpers');
 var EntityManager = require('./entity_creator');
+var SongAnalysis = require('./helix');
 
 const ARTIFICIAL_LATENCY_FACTOR = 1; // Make it 1 for no fake latency
 const UPDATE_INTERVAL = 1/60;
