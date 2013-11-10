@@ -145,9 +145,13 @@ var game = {
 						var now = (new Date()).getTime();
 						if (!enemy_body.lastfiredTime || (now - enemy_body.lastfiredTime) >= fireDelta) {
 							enemy_body.lastfiredTime = now;
-							var bullet_id = EntityManager.addBullet({pos: {x: pos.x, y: pos.y}, angle: state.bodies[enemy_idx].GetAngle(), ship_vel: state.bodies[enemy_idx].GetLinearVelocity(), bullet_speed: 10});
+							var bullet_id = EntityManager.addBullet({pos: {x: pos.x, y: pos.y},
+								                                       angle: state.bodies[enemy_idx].GetAngle(),
+								                                       ship_vel: state.bodies[enemy_idx].GetLinearVelocity(),
+								                                       bullet_speed: 10});
 							var t = this;
-							//setTimeout(function () { t.removeObject(bullet_id);}, 5000);
+							setTimeout(function (bullet_id) {t.removeObject(bullet_id);}, 5000, [bullet_id]);
+							//setTimeout(function () {t.removeObject(bullet_id);}, 5000); // Crashes for some strange version
 							io.sockets.emit('make_objects', [{type: 'bullet', id: bullet_id}]);
 						}
 					}
