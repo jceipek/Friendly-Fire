@@ -253,7 +253,7 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio', 'audia'], function
 		physicsUpdate: function () {
       // Client-side interpolation
       // TODO: RE-ENABLE ONCE FIXTURES ARE FIXED
-			//state.world.Step(1 / 60,  3,  3);
+			// state.world.Step(1 / 60,  3,  3);
 		},
 		update: function () {
 			requestAnimationFrame(this.update.bind(this));

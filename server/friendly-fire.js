@@ -19,7 +19,8 @@ var state = {
 	song_section_idx: 0,
 	song_segment_idx: 0,
 	song_bar_idx: 0,
-	last_jump_back: (new Date()).getTime()
+	last_jump_back: (new Date()).getTime(),
+	to_delete: []
 };
 
 var io = null;
@@ -56,23 +57,27 @@ var game = {
 
 			if (entity2.entity_type === 'bullet' &&
 				entity2.bullet_class === 'enemy') {
-				_g.removeObject(entity2.id);
+				state.to_delete.push(entity2.id);
+				// _g.removeObject(entity2.id);
 			}
 
 			if (entity1.entity_type === 'bullet' &&
 				entity1.bullet_class === 'enemy') {
-				_g.removeObject(entity1.id);
+				// _g.removeObject(entity1.id);
+				state.to_delete.push(entity1.id);
 			}
 
 			if (entity1.entity_type === 'bullet' &&
 				  entity1.bullet_class === 'player' &&
 				  entity2.entity_type === 'enemy') {
-				_g.removeObject(entity2.id);
+				// _g.removeObject(entity2.id);
+				state.to_delete.push(entity2.id);
 			}
 			if (entity2.entity_type === 'bullet' &&
 				entity2.bullet_class === 'player' &&
 				entity1.entity_type === 'enemy') {
-				_g.removeObject(entity1.id);
+				//_g.removeObject(entity1.id);
+				state.to_delete.push(entity1.id);
 			}
 		};
 		state.world.SetContactListener(listener);
@@ -235,7 +240,6 @@ var game = {
 		EntityManager._removeObject(id);
 	},
 	fireAI: function () {
-		console.log("FIRE");
 		var bullets = [];
 		for (var enemy_idx in state.enemies) {
 			if (state.enemies.hasOwnProperty(enemy_idx)) {
@@ -353,6 +357,10 @@ var game = {
 		}
 	},
 	step: function () {
+		while (state.to_delete.length > 0) {
+			this.removeObject(state.to_delete.pop());
+		}
+
 		state.world.Step(UPDATE_INTERVAL, 3, 3);
 		state.world.ClearForces();
 		this.stepAI();
