@@ -118,7 +118,6 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			for (var i = 0; i < ids.length; i++) {
 				var id = ids[i];
 				if (state.objects[id]) {
-					//state.world.DestroyFixture(state.bodies[id].body[0]);
 					state.world.DestroyBody(state.objects[id].body);
 					state.stage.removeChild(state.objects[id].actor);
 					if (state.objects[id].debug) {
@@ -223,7 +222,9 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			state.objects[id] = {body: body, actor: bullet_actor, debug: null};
 		},
 		physicsUpdate: function () {
-			state.world.Step(1 / 60,  3,  3);
+      // Client-side interpolation
+      // TODO: RE-ENABLE ONCE FIXTURES ARE FIXED
+			//state.world.Step(1 / 60,  3,  3);
 		},
 		update: function () {
 			requestAnimationFrame(this.update.bind(this));
