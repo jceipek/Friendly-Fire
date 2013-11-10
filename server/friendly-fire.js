@@ -2,6 +2,7 @@ var Box2D = require('box2dweb');
 var socketio = require('socket.io');
 var MathUtil = require('./math_helpers');
 var EntityManager = require('./entity_creator');
+var SongAnalysis = require('./helix');
 
 const ARTIFICIAL_LATENCY_FACTOR = 1; // Make it 1 for no fake latency
 const UPDATE_INTERVAL = 1/60;
@@ -21,6 +22,23 @@ var game = {
 		this.initNetwork(server);
 		var gravity = new Box2D.Common.Math.b2Vec2(0, 0);
 		state.world = new Box2D.Dynamics.b2World(gravity,  true);
+		var listener = new Box2D.Dynamics.b2ContactListener;
+		var _g = this;
+		listener.BeginContact = function (contact) {
+			var entity1 = contact.GetFixtureA().GetBody().GetUserData();
+			var entity2 = contact.GetFixtureB().GetBody().GetUserData();
+			if (entity1.entity_type === 'bullet' &&
+				  entity1.bullet_class === 'player' &&
+				  entity2.entity_type === 'enemy') {
+				_g.removeObject(entity2.id);
+			}
+			if (entity2.entity_type === 'bullet' &&
+				entity2.bullet_class === 'player' &&
+				entity1.entity_type === 'enemy') {
+				_g.removeObject(entity1.id);
+			}
+		};
+		state.world.SetContactListener(listener);
 
 		EntityManager.initWithState(state);
 
@@ -41,7 +59,11 @@ var game = {
 		});
 		socket.on('fire', function (time) {
 			var pos = ship.GetPosition();
-			var bullet_id = EntityManager.addBullet({pos: {x: pos.x, y: pos.y}, angle: ship.GetAngle(), ship_vel: ship.GetLinearVelocity(), bullet_speed: 10});
+			var bullet_id = EntityManager.addBullet({pos: {x: pos.x, y: pos.y},
+																					     angle: ship.GetAngle(),
+																					     ship_vel: ship.GetLinearVelocity(),
+																					     bullet_speed: 10,
+																					   	 bullet_class: 'player'});
 			setTimeout(function () {_g.removeObject(bullet_id);}, 5000);
 			io.sockets.emit('make_objects', [{type: 'bullet', id: bullet_id}]);
 		});
@@ -57,7 +79,7 @@ var game = {
 			for (var obj_idx in state.bodies) {
 				if (state.bodies.hasOwnProperty(obj_idx)) {
 					var obj = state.bodies[obj_idx];
-					other_objects.push({type: obj.entity_type, id: obj_idx});
+					other_objects.push({type: obj.GetUserData().entity_type, id: obj_idx});
 				}
 			}
 			// To new player: create objects that exist on the server
@@ -108,12 +130,15 @@ var game = {
 				var enemy_body = state.enemies[enemy_idx];
 				var pos = enemy_body.GetPosition();
 
-				var minDistance = 99999999;
 				var target = null;
 
 				for (var player_idx in state.players) {
-					var player = state.players[player_idx];
-					target = state.bodies[player.ship_id].GetPosition().Copy();
+					if (state.players.hasOwnProperty(player_idx)) {
+						var player = state.players[player_idx];
+						if (state.bodies[player.ship_id]) {
+							target = state.bodies[player.ship_id].GetPosition().Copy();
+						}
+					}
 				}
 
 				if (!target) target = pos.Copy();
@@ -128,7 +153,35 @@ var game = {
 				if (state.bodies[enemy_idx]) {
 					//console.log("setting destination to: (" + target.x + ", " + target.y  + ")");
 					state.bodies[enemy_idx].destination = target;
+
+					var dest = state.bodies[enemy_idx].destination;
+					var toDest = dest.Copy();
+				   	toDest.Subtract(pos);
+					toDest.Normalize();
+					var dir = state.bodies[enemy_idx].GetLinearVelocity().Copy();
+					dir.Normalize();
+					var dotp = dir.x * toDest.x + dir.y * toDest.y;
+					var angle = Math.acos(dotp);
+					var fov = 0.349;
+
+					var fireDelta = 500;
+					if (Math.abs(angle) < fov) {
+						var now = (new Date()).getTime();
+						if (!enemy_body.lastfiredTime || (now - enemy_body.lastfiredTime) >= fireDelta) {
+							enemy_body.lastfiredTime = now;
+							var bullet_id = EntityManager.addBullet({pos: {x: pos.x, y: pos.y},
+								                                       angle: state.bodies[enemy_idx].GetAngle(),
+								                                       ship_vel: state.bodies[enemy_idx].GetLinearVelocity(),
+								                                       bullet_speed: 15,
+								                                     	 bullet_class: 'enemy'});
+							var t = this;
+							setTimeout(function (bullet_id) {t.removeObject(bullet_id);}, 5000, [bullet_id]);
+							//setTimeout(function () {t.removeObject(bullet_id);}, 5000); // Crashes for some strange version
+							io.sockets.emit('make_objects', [{type: 'bullet', id: bullet_id}]);
+						}
+					}
 				}
+
 			}
 		}
 	},
@@ -149,9 +202,11 @@ var game = {
 			if (state.enemies.hasOwnProperty(enemy_idx)) {
 				var enemy = state.enemies[enemy_idx],
 						loc = enemy.destination,
-						ship = state.bodies[enemy_idx],
-						ship_loc = ship.GetPosition();
-				this.updateShip(enemy, loc, ship, ship_loc);
+						ship = state.bodies[enemy_idx];
+				if (ship) {
+					var ship_loc = ship.GetPosition();
+					this.updateShip(enemy, loc, ship, ship_loc);
+				}
 			}
 		}
 	},

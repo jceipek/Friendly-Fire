@@ -117,14 +117,16 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 		removeObjects: function (ids) {
 			for (var i = 0; i < ids.length; i++) {
 				var id = ids[i];
-				state.world.DestroyBody(state.objects[id].body);
-				state.stage.removeChild(state.objects[id].actor);
-				if (state.objects[id].debug) {
-					console.log(state.objects[id].debug);
-					state.stage.removeChild(state.objects[id].debug);
-				}
+				if (state.objects[id]) {
+					state.world.DestroyBody(state.objects[id].body);
+					state.stage.removeChild(state.objects[id].actor);
+					if (state.objects[id].debug) {
+						console.log(state.objects[id].debug);
+						state.stage.removeChild(state.objects[id].debug);
+					}
 
-				delete state.objects[id];
+					delete state.objects[id];
+				}
 			}
 		},
 		createObjects: function (objList) {
@@ -285,5 +287,6 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 	};
 
 	window.game = game;
+	window.state = state;
 	return game;
 });
