@@ -13,7 +13,8 @@ var state = {
 	bodies: {}, // instances of b2Body (from Box2D)
 	players: {},
 	enemies: {},
-	song_time: 1000*15
+	song_time: 1000*0,
+	song_beat_idx: 0
 };
 
 var io = null;
@@ -54,15 +55,39 @@ var game = {
 		setInterval(this.step.bind(this), UPDATE_INTERVAL * 1000);
 		setInterval(this.sync.bind(this), UPDATE_INTERVAL * 1000 * ARTIFICIAL_LATENCY_FACTOR);
 
-		for (var i = 0; i < 3; i++) {//SongAnalysis.beats.length; i++) {
+		for (var i = 0; i < 3; i++) {
+			var enemyID = EntityManager.addShip({type: 'enemy', pos: {x: 2, y: 2}});
+			io.sockets.emit('make_objects', [{type: 'enemy', id: enemyID}]);
+			state.enemies[enemyID] = state.bodies[enemyID];
+		}
+		for (var i = 0; i < SongAnalysis.beats.length; i++) {
 			var beat = SongAnalysis.beats[i];
 			setTimeout(function () {
 				console.log("BEAT");
-				var enemyID = EntityManager.addShip({type: 'enemy', pos: {x: 2, y: 2}});
-				io.sockets.emit('make_objects', [{type: 'enemy', id: enemyID}]);
-				state.enemies[enemyID] = state.bodies[enemyID];
+				_g.fireAI();
 			}, beat.start*1000);
 		}
+		for (var i = 0; i < SongAnalysis.bars.length; i++) {
+			var bar = SongAnalysis.bars[i];
+			if (bar.confidence > 0.1) {
+					setTimeout(function () {
+						console.log("BAR");
+						var enemyID = EntityManager.addShip({type: 'enemy', pos: {x: 2, y: 2}});
+						io.sockets.emit('make_objects', [{type: 'enemy', id: enemyID}]);
+						state.enemies[enemyID] = state.bodies[enemyID];
+					}, bar.start*1000);
+			}
+		}
+		// for (var i = 0; i < 3; i++) {//SongAnalysis.beats.length; i++) {
+		// 	var beat = SongAnalysis.beats[i];
+		// 	setTimeout(function () {
+		// 		console.log("BEAT");
+		// 		var enemyID = EntityManager.addShip({type: 'enemy', pos: {x: 2, y: 2}});
+		// 		io.sockets.emit('make_objects', [{type: 'enemy', id: enemyID}]);
+		// 		state.enemies[enemyID] = state.bodies[enemyID];
+		// 	}, beat.start*1000);
+		// }
+
 		// console.log(SongAnalysis.beats);
 	},
 	initInputHandling: function (socket) {
@@ -142,6 +167,25 @@ var game = {
 		io.sockets.emit('remove_objects', [id]);
 		EntityManager._removeObject(id);
 	},
+	fireAI: function () {
+		var bullets = [];
+		for (var enemy_idx in state.enemies) {
+			if (state.enemies.hasOwnProperty(enemy_idx)) {
+				var enemy_body = state.enemies[enemy_idx];
+				var pos = enemy_body.GetPosition();
+				var bullet_id = EntityManager.addBullet({pos: {x: pos.x, y: pos.y},
+					                                       angle: enemy_body.GetAngle(),
+					                                       ship_vel: enemy_body.GetLinearVelocity(),
+					                                       bullet_speed: 15,
+					                                     	 bullet_class: 'enemy'});
+				var t = this;
+				setTimeout(function (bullet_id, t) {t.removeObject(bullet_id);}, 2000, bullet_id, this);
+				//setTimeout(function () {t.removeObject(bullet_id);}, 5000); // Crashes for some strange version
+				bullets.push({type: 'bullet', id: bullet_id});
+			}
+		}
+		io.sockets.emit('make_objects', bullets);
+	},
 	stepAI: function () {
 		for (var enemy_idx in state.enemies) {
 			if (state.enemies.hasOwnProperty(enemy_idx)) {
@@ -178,26 +222,26 @@ var game = {
 					toDest.Normalize();
 					var dir = state.bodies[enemy_idx].GetLinearVelocity().Copy();
 					dir.Normalize();
-					var dotp = dir.x * toDest.x + dir.y * toDest.y;
-					var angle = Math.acos(dotp);
-					var fov = 0.349;
+					// var dotp = dir.x * toDest.x + dir.y * toDest.y;
+					// var angle = Math.acos(dotp);
+					// var fov = 0.349;
 
-					var fireDelta = 500;
-					if (Math.abs(angle) < fov) {
-						var now = (new Date()).getTime();
-						if (!enemy_body.lastfiredTime || (now - enemy_body.lastfiredTime) >= fireDelta) {
-							enemy_body.lastfiredTime = now;
-							var bullet_id = EntityManager.addBullet({pos: {x: pos.x, y: pos.y},
-								                                       angle: state.bodies[enemy_idx].GetAngle(),
-								                                       ship_vel: state.bodies[enemy_idx].GetLinearVelocity(),
-								                                       bullet_speed: 15,
-								                                     	 bullet_class: 'enemy'});
-							var t = this;
-							setTimeout(function (bullet_id) {t.removeObject(bullet_id);}, 2000, [bullet_id]);
-							//setTimeout(function () {t.removeObject(bullet_id);}, 5000); // Crashes for some strange version
-							io.sockets.emit('make_objects', [{type: 'bullet', id: bullet_id}]);
-						}
-					}
+					// var fireDelta = 500;
+					// if (Math.abs(angle) < fov) {
+					// 	var now = (new Date()).getTime();
+					// 	if (!enemy_body.lastfiredTime || (now - enemy_body.lastfiredTime) >= fireDelta) {
+					// 		enemy_body.lastfiredTime = now;
+					// 		var bullet_id = EntityManager.addBullet({pos: {x: pos.x, y: pos.y},
+					// 			                                       angle: state.bodies[enemy_idx].GetAngle(),
+					// 			                                       ship_vel: state.bodies[enemy_idx].GetLinearVelocity(),
+					// 			                                       bullet_speed: 15,
+					// 			                                     	 bullet_class: 'enemy'});
+					// 		var t = this;
+					// 		setTimeout(function (bullet_id) {t.removeObject(bullet_id);}, 2000, [bullet_id]);
+					// 		//setTimeout(function () {t.removeObject(bullet_id);}, 5000); // Crashes for some strange version
+					// 		io.sockets.emit('make_objects', [{type: 'bullet', id: bullet_id}]);
+					// 	}
+					// }
 				}
 
 			}
