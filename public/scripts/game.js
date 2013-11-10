@@ -11,7 +11,8 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			objects: {}, //object id mapping to {body: box2dBody, actor: Pixiobject,debug: Pixiobject}
 			my_ship: null,
 			lastSync: 0, // Time of last sync
-			lastUpdate: 0
+			lastUpdate: 0,
+			gamepad: null
 	};
 
 	var definitions = {
@@ -39,22 +40,55 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			}
 		},
 
+		regularPollController: function(){
+			state.gamepad = navigator.webkitGetGamepads && navigator.webkitGetGamepads()[0];
+			this.registerControllerInput();
+			window.setTimeout(this.regularPollController.bind(this), 100);
+		},
+
+		registerControllerInput: function(){
+			var x_scale=3;
+			var y_scale=3;
+			var move_threshold=.02;
+			var fire_threshold=.01;
+			var left_x=state.gamepad.axes[0];
+			var left_y=state.gamepad.axes[1];
+			var alt_left_x=state.gamepad.axes[2];
+			var alt_left_y=state.gamepad.axes[3];
+
+			if ((Math.abs(left_x)>move_threshold)||(Math.abs(left_y)>move_threshold)){
+				var shipPos = state.objects[state.my_ship].body.GetPosition();
+				var destination = {x: shipPos.x+(left_x*x_scale) , y: shipPos.y+(left_y*y_scale) };
+				socket.emit("set_destination", destination);
+
+			}else if((Math.abs(alt_left_x)>move_threshold)||(Math.abs(alt_left_y)>move_threshold)){
+				var shipPos = state.objects[state.my_ship].body.GetPosition();
+				var destination = {x: shipPos.x+(alt_left_x*x_scale) , y: shipPos.y+(alt_left_y*y_scale) };
+				socket.emit("set_destination", destination);
+			}
+
+			var fire=state.gamepad.buttons[7];
+			var alt_fire=state.gamepad.buttons[6];
+			if ((Math.abs(fire)>fire_threshold)||(Math.abs(alt_fire)>fire_threshold)){
+				socket.emit("fire", new Date());
+			}
+			//console.log("X: "+left_x+"Y: "+left_y);
+			//console.log(gamepad);
+		},
+
 		setupPollController: function() {
-			var gamepad = navigator.webkitGetGamepads && navigator.webkitGetGamepads()[0];
+			state.gamepad = navigator.webkitGetGamepads && navigator.webkitGetGamepads()[0];
 			//var timeoutID;
-			if (gamepad)
+			if (state.gamepad)
 			{
 				console.log("Gamepad Enabled");
+				this.regularPollController();
 			} else {
 				//console.log("pad not found");
 				//timeoutID = 
 				window.setTimeout(this.setupPollController.bind(this), 250);
 			}	
 		},
-		regularPollController: function(){
-			window.setTimeout(this.pollController.bind(this), 60);
-		}
-
 
 		init: function () {
 			// create a connection to the server
@@ -65,25 +99,25 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 		},
 		registerInput: function () {
 			
-			window.ontouchmove = function (e) {
-				var touch = e.targetTouches[0];
-				if (state.my_ship) {
-					var shipPos = state.objects[state.my_ship].body.GetPosition();
-					var destination = {x: touch.clientX/METER , y: touch.clientY/METER };
-					socket.emit("set_destination", destination);
-				}
-				e.preventDefault();
-				return false;
-			};
-			window.onmousemove = function (e) {
-				if (state.my_ship) {
-					var shipPos = state.objects[state.my_ship].body.GetPosition();
-					var destination = {x: e.clientX/METER , y: e.clientY/METER };
-					socket.emit("set_destination", destination);
-				}
-				e.preventDefault();
-				return false;
-			};
+			// window.ontouchmove = function (e) {
+			// 	var touch = e.targetTouches[0];
+			// 	if (state.my_ship) {
+			// 		var shipPos = state.objects[state.my_ship].body.GetPosition();
+			// 		var destination = {x: touch.clientX/METER , y: touch.clientY/METER };
+			// 		socket.emit("set_destination", destination);
+			// 	}
+			// 	e.preventDefault();
+			// 	return false;
+			// };
+			// window.onmousemove = function (e) {
+			// 	if (state.my_ship) {
+			// 		var shipPos = state.objects[state.my_ship].body.GetPosition();
+			// 		var destination = {x: e.clientX/METER , y: e.clientY/METER };
+			// 		socket.emit("set_destination", destination);
+			// 	}
+			// 	e.preventDefault();
+			// 	return false;
+			// };
 			window.onmousedown = function (e) {
 				// var shipPos = state.objects[state.my_ship].body.GetPosition();
 				// var destination = {x: e.clientX/METER , y: e.clientY/METER };
