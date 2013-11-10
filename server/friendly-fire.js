@@ -6,8 +6,8 @@ var SongAnalysis = require('./helix');
 
 const ARTIFICIAL_LATENCY_FACTOR = 1; // Make it 1 for no fake latency
 const UPDATE_INTERVAL = 1/60;
-const STAGE_WIDTH = 1000; // px
-const STAGE_HEIGHT = 900; // px
+//const STAGE_WIDTH = 1000; // px
+//const STAGE_HEIGHT = 900; // px
 var state = {
 	world: null,
 	bodies: {}, // instances of b2Body (from Box2D)
@@ -37,6 +37,14 @@ var game = {
 				entity1.entity_type === 'enemy') {
 				_g.removeObject(entity1.id);
 			}
+			if (entity1.entity_type === 'bullet' &&
+				  entity1.bullet_class === 'enemy') {
+				_g.removeObject(entity1.id);
+			}
+			if (entity2.entity_type === 'bullet' &&
+				entity2.bullet_class === 'enemy') {
+				_g.removeObject(entity2.id);
+			}
 		};
 		state.world.SetContactListener(listener);
 
@@ -45,10 +53,16 @@ var game = {
 		setInterval(this.step.bind(this), UPDATE_INTERVAL * 1000);
 		setInterval(this.sync.bind(this), UPDATE_INTERVAL * 1000 * ARTIFICIAL_LATENCY_FACTOR);
 
-		for (var i = 0; i < 5; i++) {
-			var enemyID = EntityManager.addShip({type: 'enemy', pos: {x: 2, y: 2}});
-			state.enemies[enemyID] = state.bodies[enemyID];
+		for (var i = 0; i < SongAnalysis.beats.length; i++) {
+			var beat = SongAnalysis.beats[i];
+			setTimeout(function () {
+				console.log("BEAT");
+				var enemyID = EntityManager.addShip({type: 'enemy', pos: {x: 2, y: 2}});
+				io.sockets.emit('make_objects', [{type: 'enemy', id: enemyID}]);
+				state.enemies[enemyID] = state.bodies[enemyID];
+			}, beat.start*1000);
 		}
+		// console.log(SongAnalysis.beats);
 	},
 	initInputHandling: function (socket) {
 		var _g = this;
@@ -175,7 +189,7 @@ var game = {
 								                                       bullet_speed: 15,
 								                                     	 bullet_class: 'enemy'});
 							var t = this;
-							setTimeout(function (bullet_id) {t.removeObject(bullet_id);}, 5000, [bullet_id]);
+							setTimeout(function (bullet_id) {t.removeObject(bullet_id);}, 2000, [bullet_id]);
 							//setTimeout(function () {t.removeObject(bullet_id);}, 5000); // Crashes for some strange version
 							io.sockets.emit('make_objects', [{type: 'bullet', id: bullet_id}]);
 						}
@@ -219,10 +233,11 @@ var game = {
 
 			vec = new Box2D.Common.Math.b2Vec2(vec.x * k, vec.y * k);
 			ship.m_linearDamping = 3;
+			ship.m_angularDamping = 60;
 			des_angle = Math.atan2(vec.x, -vec.y);
-			// var next_angle = (ship.GetAngle() + ship.GetAngularVelocity()) / 3;
-			// var total_rotation = des_angle - next_angle;
-			// ship.ApplyTorque(total_rotation < 0 ? -10 : 10);
+			var next_angle = (ship.GetAngle() + ship.GetAngularVelocity()) / 3;
+			var total_rotation = des_angle - next_angle;
+			ship.ApplyTorque(total_rotation < 0 ? -10 : 10);
 			if (adjust_angle) {ship.SetAngle(des_angle);
 								ship.ApplyForce(vec, ship.GetWorldCenter());}
 		}

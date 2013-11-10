@@ -2,7 +2,8 @@ var Box2D = require('box2dweb');
 
 var definitions = {
   polyFixture: new Box2D.Dynamics.b2FixtureDef(),
-  circleFixture: new Box2D.Dynamics.b2FixtureDef(),
+  shipFixture: new Box2D.Dynamics.b2FixtureDef(),
+  bulletFixture: new Box2D.Dynamics.b2FixtureDef(),
   bodyDef: new Box2D.Dynamics.b2BodyDef()
 };
 
@@ -17,9 +18,13 @@ var creator = {
     this.initFixtures();
   },
   initFixtures: function () {
-    definitions.circleFixture.shape = new Box2D.Collision.Shapes.b2CircleShape();
-    definitions.circleFixture.density = 1;
-    definitions.circleFixture.restitution = 0.7;
+    definitions.shipFixture.shape = new Box2D.Collision.Shapes.b2CircleShape();
+    definitions.shipFixture.density = 1;
+    definitions.shipFixture.restitution = 0.7;
+    definitions.bulletFixture.shape = new Box2D.Collision.Shapes.b2CircleShape();
+    definitions.bulletFixture.density = 0.001;
+    definitions.bulletFixture.restitution = 0.7;
+    definitions.bulletFixture.isSensor = true;
   },
   addBullet: function (params) {
     var _g = this;
@@ -34,13 +39,13 @@ var creator = {
     var vec = new Box2D.Common.Math.b2Vec2(Math.sin(angle), -Math.cos(angle));
     var vel = new Box2D.Common.Math.b2Vec2(vec.x * bullet_speed + ship_vel.x, vec.y * bullet_speed + ship_vel.y);
 
-    definitions.bodyDef.type = Box2D.Dynamics.b2Body.b2_dynamicBody;
+    definitions.bodyDef.type = Box2D.Dynamics.b2Body.b2_kinematicBody;
     definitions.bodyDef.position.Set(pos.x + vec.x * 0.3, pos.y + vec.y * 0.3);
     body = state.world.CreateBody(definitions.bodyDef);
 
     size = 5;
-    definitions.circleFixture.shape.SetRadius(size / 2 / PX_PER_METER);
-    body.CreateFixture(definitions.circleFixture);
+    definitions.bulletFixture.shape.SetRadius(size / 2 / PX_PER_METER);
+    body.CreateFixture(definitions.bulletFixture);
     body.SetAngle(angle);
     body.SetLinearVelocity(vel);
     var id = object_tracker;
@@ -61,8 +66,9 @@ var creator = {
     body = state.world.CreateBody(definitions.bodyDef);
 
     size = 50;
-    definitions.circleFixture.shape.SetRadius(size / 2 / PX_PER_METER);
-    body.CreateFixture(definitions.circleFixture);
+    definitions.shipFixture.shape.SetRadius(size / 2 / PX_PER_METER);
+    definitions.shipFixture.density = 1;
+    body.CreateFixture(definitions.shipFixture);
 
     var id = object_tracker;
     state.bodies[id] = body;
@@ -71,6 +77,10 @@ var creator = {
     return id;
   },
   _removeObject: function (id) {
+    if (!state.bodies[id]) {
+      return;
+    }
+    //state.world.DestroyFixture(state.bodies[id][0]);
     state.world.DestroyBody(state.bodies[id]);
     delete state.bodies[id];
   },

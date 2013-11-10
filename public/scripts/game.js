@@ -118,6 +118,7 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			for (var i = 0; i < ids.length; i++) {
 				var id = ids[i];
 				if (state.objects[id]) {
+					//state.world.DestroyFixture(state.bodies[id].body[0]);
 					state.world.DestroyBody(state.objects[id].body);
 					state.stage.removeChild(state.objects[id].actor);
 					if (state.objects[id].debug) {
@@ -256,8 +257,7 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			}
 			var data = syncData.data;
 			var timestamp = syncData.timestamp;
-			// console.log(timestamp);
-			$('#network-fps').html(((new Date()).getTime() - timestamp));
+			$('#network-fps').html(((new Date()).getTime() - state.lastSync));
 
 			state.lastSync = timestamp;
 			var n = data.length;
