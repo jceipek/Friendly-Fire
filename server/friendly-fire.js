@@ -27,10 +27,14 @@ var game = {
 		listener.BeginContact = function (contact) {
 			var entity1 = contact.GetFixtureA().GetBody().GetUserData();
 			var entity2 = contact.GetFixtureB().GetBody().GetUserData();
-			if (entity1.entity_type === 'bullet' && entity2.entity_type === 'enemy') {
+			if (entity1.entity_type === 'bullet' &&
+				  entity1.bullet_class === 'player' &&
+				  entity2.entity_type === 'enemy') {
 				_g.removeObject(entity2.id);
 			}
-			if (entity2.entity_type === 'bullet' && entity1.entity_type === 'enemy') {
+			if (entity2.entity_type === 'bullet' &&
+				entity2.bullet_class === 'player' &&
+				entity1.entity_type === 'enemy') {
 				_g.removeObject(entity1.id);
 			}
 		};
@@ -55,7 +59,11 @@ var game = {
 		});
 		socket.on('fire', function (time) {
 			var pos = ship.GetPosition();
-			var bullet_id = EntityManager.addBullet({pos: {x: pos.x, y: pos.y}, angle: ship.GetAngle(), ship_vel: ship.GetLinearVelocity(), bullet_speed: 10});
+			var bullet_id = EntityManager.addBullet({pos: {x: pos.x, y: pos.y},
+																					     angle: ship.GetAngle(),
+																					     ship_vel: ship.GetLinearVelocity(),
+																					     bullet_speed: 10,
+																					   	 bullet_class: 'player'});
 			setTimeout(function () {_g.removeObject(bullet_id);}, 5000);
 			io.sockets.emit('make_objects', [{type: 'bullet', id: bullet_id}]);
 		});
@@ -164,7 +172,8 @@ var game = {
 							var bullet_id = EntityManager.addBullet({pos: {x: pos.x, y: pos.y},
 								                                       angle: state.bodies[enemy_idx].GetAngle(),
 								                                       ship_vel: state.bodies[enemy_idx].GetLinearVelocity(),
-								                                       bullet_speed: 10});
+								                                       bullet_speed: 15,
+								                                     	 bullet_class: 'enemy'});
 							var t = this;
 							setTimeout(function (bullet_id) {t.removeObject(bullet_id);}, 5000, [bullet_id]);
 							//setTimeout(function () {t.removeObject(bullet_id);}, 5000); // Crashes for some strange version

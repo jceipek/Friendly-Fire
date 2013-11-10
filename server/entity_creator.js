@@ -28,6 +28,7 @@ var creator = {
         angle = params.angle || 0,
         ship_vel = params.ship_vel || {x: 0, y: 0},
         bullet_speed = params.bullet_speed || 5,
+        bullet_class = params.bullet_class || 'player',
         body,
         size;
     var vec = new Box2D.Common.Math.b2Vec2(Math.sin(angle), -Math.cos(angle));
@@ -44,7 +45,7 @@ var creator = {
     body.SetLinearVelocity(vel);
     var id = object_tracker;
     state.bodies[id] = body;
-    state.bodies[id].SetUserData({id: id, entity_type: 'bullet'});
+    state.bodies[id].SetUserData({id: id, entity_type: 'bullet', bullet_class: bullet_class});
     object_tracker++;
     return id;
   },
