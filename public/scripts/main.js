@@ -6,6 +6,7 @@ require.config({
 		zepto: '3rdparty/zepto.min',
 		pixi: '3rdparty/pixi',
 		box2d: '3rdparty/Box2D',
+		audia: '3rdparty/audia-min',
 		socketio: '/socket.io/socket.io'
 	},
 	shim: {
@@ -20,6 +21,9 @@ require.config({
 		},
 		socketio: {
 			exports: 'io'
+		},
+		audia: {
+			exports: 'audia'
 		}
 	}
 });

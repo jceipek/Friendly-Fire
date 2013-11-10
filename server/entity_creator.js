@@ -18,13 +18,13 @@ var creator = {
     this.initFixtures();
   },
   initFixtures: function () {
-    //definitions.shipFixture.shape = new Box2D.Collision.Shapes.b2CircleShape();
+    definitions.shipFixture.shape = new Box2D.Collision.Shapes.b2CircleShape();
     // Need to create shape first?
-    definitions.shipFixture.shape.SetAsArray([
-      new Box2D.Common.Math.b2Vec2(0.2, 0.25),
-      new Box2D.Common.Math.b2Vec2(-0.2, 0.25),
-      new Box2D.Common.Math.b2Vec2(0, -0.085)
-      ]);
+    // definitions.shipFixture.shape.SetAsArray([
+    //   new Box2D.Common.Math.b2Vec2(0.2, 0.25),
+    //   new Box2D.Common.Math.b2Vec2(-0.2, 0.25),
+    //   new Box2D.Common.Math.b2Vec2(0, -0.085)
+    //   ]);
     definitions.shipFixture.density = 1;
     definitions.shipFixture.restitution = 0.7;
     definitions.bulletFixture.shape = new Box2D.Collision.Shapes.b2CircleShape();

@@ -12,7 +12,8 @@ var state = {
 	world: null,
 	bodies: {}, // instances of b2Body (from Box2D)
 	players: {},
-	enemies: {}
+	enemies: {},
+	song_time: 1000*15
 };
 
 var io = null;
@@ -53,7 +54,7 @@ var game = {
 		setInterval(this.step.bind(this), UPDATE_INTERVAL * 1000);
 		setInterval(this.sync.bind(this), UPDATE_INTERVAL * 1000 * ARTIFICIAL_LATENCY_FACTOR);
 
-		for (var i = 0; i < SongAnalysis.beats.length; i++) {
+		for (var i = 0; i < 3; i++) {//SongAnalysis.beats.length; i++) {
 			var beat = SongAnalysis.beats[i];
 			setTimeout(function () {
 				console.log("BEAT");
@@ -100,6 +101,9 @@ var game = {
 			new_socket.emit('make_objects', other_objects);
 			var ship_id = EntityManager.addShip();
 			state.players[new_socket.id] = { socket: new_socket, type: ship_type, ship_id: ship_id };
+
+			// To new player: sync song playback time
+			new_socket.emit('set_song_time', state.song_time);
 
 			// To everyone: create a new ship for the new player
 			io.sockets.emit('make_objects', [{type: ship_type, id: ship_id}]);

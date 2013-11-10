@@ -1,4 +1,4 @@
-define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI, Box2D, MathUtil, io) {
+define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio', 'audia'], function ($, PIXI, Box2D, MathUtil, io, audia) {
 	var stage_width = window.innerWidth;
 	var stage_height = window.innerHeight;
 	const METER = 100;
@@ -11,7 +11,8 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			objects: {}, //object id mapping to {body: box2dBody, actor: Pixiobject,debug: Pixiobject}
 			my_ship: null,
 			lastSync: 0, // Time of last sync
-			lastUpdate: 0
+			lastUpdate: 0,
+			sounds: null
 	};
 
 	var definitions = {
@@ -26,8 +27,26 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 
 		init: function () {
 			// create a connection to the server
-			this.initGraphics();
-			this.registerInput();
+			var cb = function () {
+				//state.sounds.instance = state.sounds.data.play();
+				state.sounds.play();
+				this.initGraphics();
+				this.registerInput();
+			};
+			this.initSounds(cb.bind(this));
+		},
+		initSounds: function (callback) {
+			// debugger;
+			state.sounds = new Audia();
+			state.sounds.src = 'assets/Anamanaguchi_-_14_-_Helix_Nebula.mp3';
+			state.sounds.onload = callback.bind(this);
+			// state.sounds.data = new Howl({
+			//   urls: ['assets/Anamanaguchi_-_14_-_Helix_Nebula.mp3'],
+			//   //sprite: {
+			//   //  song: [0, 175.43601*1000]
+			//   //},
+			//  	onload: callback
+			// });
 		},
 		registerInput: function () {
 			window.ontouchmove = function (e) {
@@ -110,6 +129,16 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 			socket.on('remove_objects', this.removeObjects.bind(this));
 			socket.on('assign_ship', this.assignShip.bind(this));
 			socket.on('update', this.sync.bind(this));
+			socket.on('set_song_time', this.syncSong.bind(this));
+		},
+		syncSong: function (time) {
+			console.log(time);
+			//state.sounds.data.pause();
+			//state.sounds.data.pos(state.sounds.instance, time);
+			state.sounds.currentTime = time/1000;
+			state.sounds.play();
+			//state.sounds.data.play();
+			//state.sounds.instance.pos(time);
 		},
 		assignShip: function (ship_id){
 			state.my_ship = ship_id;
