@@ -24,12 +24,47 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 
 	var game = {
 
+		gamepadSupportAvail: function () {
+			var gamepadSupportAvailable = !!navigator.webkitGetGamepads || !!navigator.webkitGamepads;
+			return gamepadSupportAvailable;
+			//console.log(gamepadSupportAvailable);
+		},
+
+		initController: function(){
+			if(this.gamepadSupportAvail())
+			{
+				this.setupPollController();
+			}else{
+				console.log("Gamepad not supported");
+			}
+		},
+
+		setupPollController: function() {
+			var gamepad = navigator.webkitGetGamepads && navigator.webkitGetGamepads()[0];
+			//var timeoutID;
+			if (gamepad)
+			{
+				console.log("Gamepad Enabled");
+			} else {
+				//console.log("pad not found");
+				//timeoutID = 
+				window.setTimeout(this.setupPollController.bind(this), 250);
+			}	
+		},
+		regularPollController: function(){
+			window.setTimeout(this.pollController.bind(this), 60);
+		}
+
+
 		init: function () {
 			// create a connection to the server
 			this.initGraphics();
 			this.registerInput();
+			this.initController();
+
 		},
 		registerInput: function () {
+			
 			window.ontouchmove = function (e) {
 				var touch = e.targetTouches[0];
 				if (state.my_ship) {
