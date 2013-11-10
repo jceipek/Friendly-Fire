@@ -13,7 +13,8 @@ var state = {
 	bodies: {}, // instances of b2Body (from Box2D)
 	players: {},
 	enemies: {},
-	song_time: 1000*0,
+	song_start_time: 0,
+	song_time_ms: 1000*0,
 	song_beat_idx: 0
 };
 
@@ -54,6 +55,9 @@ var game = {
 
 		setInterval(this.step.bind(this), UPDATE_INTERVAL * 1000);
 		setInterval(this.sync.bind(this), UPDATE_INTERVAL * 1000 * ARTIFICIAL_LATENCY_FACTOR);
+
+
+		state.song_start_time = (new Date()).getTime();
 
 		for (var i = 0; i < 3; i++) {
 			var enemyID = EntityManager.addShip({type: 'enemy', pos: {x: 2, y: 2}});
@@ -128,7 +132,7 @@ var game = {
 			state.players[new_socket.id] = { socket: new_socket, type: ship_type, ship_id: ship_id };
 
 			// To new player: sync song playback time
-			new_socket.emit('set_song_time', state.song_time);
+			new_socket.emit('set_song_time', state.song_time_ms);
 
 			// To everyone: create a new ship for the new player
 			io.sockets.emit('make_objects', [{type: ship_type, id: ship_id}]);
@@ -185,6 +189,15 @@ var game = {
 			}
 		}
 		io.sockets.emit('make_objects', bullets);
+	},
+	stepMusic: function () {
+		state.song_time_ms = (new Date()).getTime() - state.song_start_time;
+		var beat = SongAnalysis.beats[state.song_beat_idx];
+		if (beat) {
+			if (beat.start < state.song_time_ms) {
+				state.song_beat_idx++;
+			}
+		}
 	},
 	stepAI: function () {
 
