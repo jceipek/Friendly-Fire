@@ -287,5 +287,6 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio'], function ($, PIXI
 	};
 
 	window.game = game;
+	window.state = state;
 	return game;
 });

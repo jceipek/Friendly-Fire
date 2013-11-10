@@ -42,9 +42,9 @@ var creator = {
     body.CreateFixture(definitions.circleFixture);
     body.SetAngle(angle);
     body.SetLinearVelocity(vel);
-    body.entity_type = 'bullet';
     var id = object_tracker;
     state.bodies[id] = body;
+    state.bodies[id].SetUserData({id: id, entity_type: 'bullet'});
     object_tracker++;
     return id;
   },
@@ -62,10 +62,10 @@ var creator = {
     size = 50;
     definitions.circleFixture.shape.SetRadius(size / 2 / PX_PER_METER);
     body.CreateFixture(definitions.circleFixture);
-    body.entity_type = type;
 
     var id = object_tracker;
     state.bodies[id] = body;
+    state.bodies[id].SetUserData({id: id, entity_type: type});
     object_tracker++;
     return id;
   },

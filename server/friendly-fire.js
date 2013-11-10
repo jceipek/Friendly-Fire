@@ -22,6 +22,19 @@ var game = {
 		this.initNetwork(server);
 		var gravity = new Box2D.Common.Math.b2Vec2(0, 0);
 		state.world = new Box2D.Dynamics.b2World(gravity,  true);
+		var listener = new Box2D.Dynamics.b2ContactListener;
+		var _g = this;
+		listener.BeginContact = function (contact) {
+			var entity1 = contact.GetFixtureA().GetBody().GetUserData();
+			var entity2 = contact.GetFixtureB().GetBody().GetUserData();
+			if (entity1.entity_type === 'bullet' && entity2.entity_type === 'enemy') {
+				_g.removeObject(entity2.id);
+			}
+			if (entity2.entity_type === 'bullet' && entity1.entity_type === 'enemy') {
+				_g.removeObject(entity1.id);
+			}
+		};
+		state.world.SetContactListener(listener);
 
 		EntityManager.initWithState(state);
 
@@ -58,7 +71,7 @@ var game = {
 			for (var obj_idx in state.bodies) {
 				if (state.bodies.hasOwnProperty(obj_idx)) {
 					var obj = state.bodies[obj_idx];
-					other_objects.push({type: obj.entity_type, id: obj_idx});
+					other_objects.push({type: obj.GetUserData().entity_type, id: obj_idx});
 				}
 			}
 			// To new player: create objects that exist on the server
@@ -109,12 +122,15 @@ var game = {
 				var enemy_body = state.enemies[enemy_idx];
 				var pos = enemy_body.GetPosition();
 
-				var minDistance = 99999999;
 				var target = null;
 
 				for (var player_idx in state.players) {
-					var player = state.players[player_idx];
-					target = state.bodies[player.ship_id].GetPosition().Copy();
+					if (state.players.hasOwnProperty(player_idx)) {
+						var player = state.players[player_idx];
+						if (state.bodies[player.ship_id]) {
+							target = state.bodies[player.ship_id].GetPosition().Copy();
+						}
+					}
 				}
 
 				if (!target) target = pos.Copy();
@@ -177,9 +193,11 @@ var game = {
 			if (state.enemies.hasOwnProperty(enemy_idx)) {
 				var enemy = state.enemies[enemy_idx],
 						loc = enemy.destination,
-						ship = state.bodies[enemy_idx],
-						ship_loc = ship.GetPosition();
-				this.updateShip(enemy, loc, ship, ship_loc);
+						ship = state.bodies[enemy_idx];
+				if (ship) {
+					var ship_loc = ship.GetPosition();
+					this.updateShip(enemy, loc, ship, ship_loc);
+				}
 			}
 		}
 	},
