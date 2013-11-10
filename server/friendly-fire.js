@@ -15,7 +15,11 @@ var state = {
 	enemies: {},
 	song_start_time: 0,
 	song_time_ms: 1000*0,
-	song_beat_idx: 0
+	song_beat_idx: 0,
+	song_section_idx: 0,
+	song_segment_idx: 0,
+	song_bar_idx: 0,
+	last_jump_back: (new Date()).getTime()
 };
 
 var io = null;
@@ -30,6 +34,36 @@ var game = {
 		listener.BeginContact = function (contact) {
 			var entity1 = contact.GetFixtureA().GetBody().GetUserData();
 			var entity2 = contact.GetFixtureB().GetBody().GetUserData();
+			// bullet class is by whom the shot was fired
+
+			if (entity1.entity_type === 'avenger' || entity2.entity_type === 'avenger') {
+				console.log("HELP");
+			}
+
+			if (entity1.entity_type === 'bullet' &&
+				  entity1.bullet_class === 'enemy' &&
+				  entity2.entity_type === 'avenger') {
+				console.log("JUMP BACK");
+					_g.jumpMusicBack(-2000);
+			}
+
+			if (entity2.entity_type === 'bullet' &&
+				  entity2.bullet_class === 'enemy' &&
+				  entity1.entity_type === 'avenger') {
+				console.log("JUMP BACK");
+					_g.jumpMusicBack(-2000);
+			}
+
+			if (entity2.entity_type === 'bullet' &&
+				entity2.bullet_class === 'enemy') {
+				_g.removeObject(entity2.id);
+			}
+
+			if (entity1.entity_type === 'bullet' &&
+				entity1.bullet_class === 'enemy') {
+				_g.removeObject(entity1.id);
+			}
+
 			if (entity1.entity_type === 'bullet' &&
 				  entity1.bullet_class === 'player' &&
 				  entity2.entity_type === 'enemy') {
@@ -39,14 +73,6 @@ var game = {
 				entity2.bullet_class === 'player' &&
 				entity1.entity_type === 'enemy') {
 				_g.removeObject(entity1.id);
-			}
-			if (entity1.entity_type === 'bullet' &&
-				  entity1.bullet_class === 'enemy') {
-				_g.removeObject(entity1.id);
-			}
-			if (entity2.entity_type === 'bullet' &&
-				entity2.bullet_class === 'enemy') {
-				_g.removeObject(entity2.id);
 			}
 		};
 		state.world.SetContactListener(listener);
@@ -59,40 +85,77 @@ var game = {
 
 		state.song_start_time = (new Date()).getTime();
 
-		for (var i = 0; i < 3; i++) {
-			var enemyID = EntityManager.addShip({type: 'enemy', pos: {x: 2, y: 2}});
-			io.sockets.emit('make_objects', [{type: 'enemy', id: enemyID}]);
-			state.enemies[enemyID] = state.bodies[enemyID];
-		}
-		for (var i = 0; i < SongAnalysis.beats.length; i++) {
-			var beat = SongAnalysis.beats[i];
-			setTimeout(function () {
-				// console.log("BEAT");
-				_g.fireAI(this);
-			}, beat.start*1000);
-		}
-		for (var i = 0; i < SongAnalysis.bars.length; i++) {
-			var bar = SongAnalysis.bars[i];
-			if (bar.confidence > 0.1) {
-					setTimeout(function () {
-						// console.log("BAR");
-						var enemyID = EntityManager.addShip({type: 'enemy', pos: {x: 2, y: 2}});
-						io.sockets.emit('make_objects', [{type: 'enemy', id: enemyID}]);
-						state.enemies[enemyID] = state.bodies[enemyID];
-					}, bar.start*1000);
-			}
-		}
-		// for (var i = 0; i < 3; i++) {//SongAnalysis.beats.length; i++) {
+		// for (var i = 0; i < 3; i++) {
+		// 	var enemyID = EntityManager.addShip({type: 'enemy', pos: {x: 2, y: 2}});
+		// 	io.sockets.emit('make_objects', [{type: 'enemy', id: enemyID}]);
+		// 	state.enemies[enemyID] = state.bodies[enemyID];
+		// }
+		// for (var i = 0; i < SongAnalysis.beats.length; i++) {
 		// 	var beat = SongAnalysis.beats[i];
 		// 	setTimeout(function () {
 		// 		console.log("BEAT");
-		// 		var enemyID = EntityManager.addShip({type: 'enemy', pos: {x: 2, y: 2}});
-		// 		io.sockets.emit('make_objects', [{type: 'enemy', id: enemyID}]);
-		// 		state.enemies[enemyID] = state.bodies[enemyID];
+		// 		// _g.fireAI(this);
 		// 	}, beat.start*1000);
 		// }
+		// for (var i = 0; i < SongAnalysis.bars.length; i++) {
+		// 	var bar = SongAnalysis.bars[i];
+		// 	if (bar.confidence > 0.1) {
+		// 			setTimeout(function () {
+		// 				// console.log("BAR");
+		// 				var enemyID = EntityManager.addShip({type: 'enemy', pos: {x: 2, y: 2}});
+		// 				io.sockets.emit('make_objects', [{type: 'enemy', id: enemyID}]);
+		// 				state.enemies[enemyID] = state.bodies[enemyID];
+		// 			}, bar.start*1000);
+		// 	}
+		// }
+
+		for (var i = 0; i < 3; i++) {//SongAnalysis.beats.length; i++) {
+			var beat = SongAnalysis.beats[i];
+			setTimeout(function () {
+				console.log("BEAT");
+				var enemyID = EntityManager.addShip({type: 'enemy', pos: {x: 2, y: 2}});
+				io.sockets.emit('make_objects', [{type: 'enemy', id: enemyID}]);
+				state.enemies[enemyID] = state.bodies[enemyID];
+			}, beat.start*1000);
+		}
 
 		// console.log(SongAnalysis.beats);
+	},
+	jumpMusicBack: function (time) {
+		if ((new Date()).getTime() - state.last_jump_back < 2000) {
+			console.log("Avoid jumpback");
+			return;
+		}
+
+		state.last_jump_back = (new Date()).getTime();
+
+		state.song_start_time -= time;
+		state.song_time_ms -= time;
+		io.sockets.emit('set_song_time', state.song_time_ms);
+		for (var i = 0; i < SongAnalysis.bars.length; i++) {
+			if (SongAnalysis.bars[i].start * 1000 > state.song_time_ms) {
+				state.song_bar_idx = i;
+				break;
+			}
+		}
+		for (var i = 0; i < SongAnalysis.beats.length; i++) {
+			if (SongAnalysis.beats[i].start * 1000 > state.song_time_ms) {
+				state.song_beat_idx = i;
+				break;
+			}
+		}
+		for (var i = 0; i < SongAnalysis.sections.length; i++) {
+			if (SongAnalysis.sections[i].start * 1000 > state.song_time_ms) {
+				state.song_section_idx = i;
+				break;
+			}
+		}
+		for (var i = 0; i < SongAnalysis.segments.length; i++) {
+			if (SongAnalysis.segments[i].start * 1000 > state.song_time_ms) {
+				state.song_segment_idx = i;
+				break;
+			}
+		}
 	},
 	initInputHandling: function (socket) {
 		var _g = this;
@@ -172,6 +235,7 @@ var game = {
 		EntityManager._removeObject(id);
 	},
 	fireAI: function () {
+		console.log("FIRE");
 		var bullets = [];
 		for (var enemy_idx in state.enemies) {
 			if (state.enemies.hasOwnProperty(enemy_idx)) {
@@ -192,10 +256,37 @@ var game = {
 	},
 	stepMusic: function () {
 		state.song_time_ms = (new Date()).getTime() - state.song_start_time;
-		var beat = SongAnalysis.beats[state.song_beat_idx];
-		if (beat) {
-			if (beat.start < state.song_time_ms) {
-				state.song_beat_idx++;
+		var curr_segment = SongAnalysis.segments[state.song_segment_idx];
+		var next_segment = SongAnalysis.segments[state.song_segment_idx + 1];
+		if (curr_segment) {
+			if (curr_segment.start*1000 < state.song_time_ms) {
+				state.song_segment_idx++;
+			}
+			if (next_segment && (next_segment.start > curr_segment.start)) {
+				var diff = next_segment.start*1000 - state.song_time_ms;
+				setTimeout(this.fireAI.bind(this), diff);
+				state.song_segment_idx++;
+			}
+		}
+
+		// USE SECTIONS FOR LARGE GROUPS OR TRANSITIONS
+
+		var curr_bar = SongAnalysis.bars[state.song_bar_idx];
+		var next_bar = SongAnalysis.bars[state.song_bar_idx + 1];
+		if (curr_bar) {
+			if (curr_bar.start*1000 < state.song_time_ms) {
+				state.song_bar_idx++;
+			}
+			if (next_bar && (next_bar.start > curr_bar.start)) {
+				var diff = next_bar.start*1000 - state.song_time_ms;
+				if (next_bar.confidence > 0.0) {
+					setTimeout(function () {
+							var enemyID = EntityManager.addShip({type: 'enemy', pos: {x: 2, y: 2}});
+							io.sockets.emit('make_objects', [{type: 'enemy', id: enemyID}]);
+							state.enemies[enemyID] = state.bodies[enemyID];
+					}, diff);
+				}
+				state.song_bar_idx++;
 			}
 		}
 	},
@@ -265,6 +356,7 @@ var game = {
 		state.world.Step(UPDATE_INTERVAL, 3, 3);
 		state.world.ClearForces();
 		this.stepAI();
+		this.stepMusic();
 		for (var player_idx in state.players) {
 			if (state.players.hasOwnProperty(player_idx)) {
 				var player = state.players[player_idx],
