@@ -28,7 +28,6 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio', 'audia'], function
 		init: function () {
 			// create a connection to the server
 			var cb = function () {
-				//state.sounds.instance = state.sounds.data.play();
 				state.sounds.play();
 				this.initGraphics();
 				this.registerInput();
@@ -36,19 +35,45 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio', 'audia'], function
 			this.initSounds(cb.bind(this));
 		},
 		initSounds: function (callback) {
-			// debugger;
 			state.sounds = new Audia();
 			state.sounds.src = 'assets/Anamanaguchi_-_14_-_Helix_Nebula.mp3';
 			state.sounds.onload = callback.bind(this);
-			// state.sounds.data = new Howl({
-			//   urls: ['assets/Anamanaguchi_-_14_-_Helix_Nebula.mp3'],
-			//   //sprite: {
-			//   //  song: [0, 175.43601*1000]
-			//   //},
-			//  	onload: callback
-			// });
 		},
 		registerInput: function () {
+
+			navigator.webkitGetUserMedia({audio:true, video:true}, function(stream){
+			    var audioContext = new webkitAudioContext();
+			    var analyser = audioContext.createAnalyser();
+			    var microphone = audioContext.createMediaStreamSource(stream);
+			    var javascriptNode = audioContext.createJavaScriptNode(2048, 1, 1);
+
+			    analyser.smoothingTimeConstant = 0.3;
+			    analyser.fftSize = 1024;
+
+			    microphone.connect(analyser);
+			    analyser.connect(javascriptNode);
+			    javascriptNode.connect(audioContext.destination);
+
+			    javascriptNode.onaudioprocess = function() {
+			        var array =  new Uint8Array(analyser.frequencyBinCount);
+			        analyser.getByteFrequencyData(array);
+			        var values = 0;
+
+			        var length = array.length;
+			        for (var i = 0; i < length; i++) {
+			            values += array[i];
+			        }
+
+			        var average = values / length;
+
+			        if (average >= 80) {
+			        	socket.emit("kill_enemies", true);
+			        }
+			    }
+			});
+
+
+
 			window.ontouchmove = function (e) {
 				var touch = e.targetTouches[0];
 				if (state.my_ship) {
@@ -140,7 +165,7 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio', 'audia'], function
 			//state.sounds.data.play();
 			//state.sounds.instance.pos(time);
 		},
-		assignShip: function (ship_id){
+		assignShip: function (ship_id, controller){
 			state.my_ship = ship_id;
 		},
 		removeObjects: function (ids) {

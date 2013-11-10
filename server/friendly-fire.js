@@ -42,14 +42,14 @@ var game = {
 				  entity1.bullet_class === 'enemy' &&
 				  entity2.entity_type === 'avenger') {
 				// console.log("JUMP BACK");
-					_g.jumpMusicBack(-2000);
+					//_g.jumpMusicBack(-2000);
 			}
 
 			if (entity2.entity_type === 'bullet' &&
 				  entity2.bullet_class === 'enemy' &&
 				  entity1.entity_type === 'avenger') {
 				// console.log("JUMP BACK");
-					_g.jumpMusicBack(-2000);
+					//_g.jumpMusicBack(-2000);
 			}
 
 			if (entity2.entity_type === 'bullet' &&
@@ -178,6 +178,14 @@ var game = {
 																					   	 bullet_class: 'player'});
 			setTimeout(function () {_g.removeObject(bullet_id);}, 5000);
 			io.sockets.emit('make_objects', [{type: 'bullet', id: bullet_id}]);
+		});
+		socket.on('kill_enemies', function (truthiness) {
+			//XXXXXX
+			for (var enemy_idx in state.enemies) {
+				if (state.enemies.hasOwnProperty(enemy_idx)) {
+					state.to_delete.push(enemy_idx);
+				}
+			}
 		});
 	},
 	initNetwork: function (server) {
