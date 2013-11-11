@@ -179,8 +179,8 @@ var game = {
 			setTimeout(function () {_g.removeObject(bullet_id);}, 5000);
 			io.sockets.emit('make_objects', [{type: 'bullet', id: bullet_id}]);
 		});
-		socket.on('kill_enemies', function (truthiness) {
-			//XXXXXX
+		socket.on('kill_enemies', function (volume) {
+			console.log(volume);
 			for (var enemy_idx in state.enemies) {
 				if (state.enemies.hasOwnProperty(enemy_idx)) {
 					state.to_delete.push(enemy_idx);
@@ -268,7 +268,7 @@ var game = {
 	},
 	stepMusic: function () {
 		state.song_time_ms = (new Date()).getTime() - state.song_start_time;
-		console.log(state.song_beat_idx);
+		//console.log(state.song_beat_idx);
 		var curr_beat = SongAnalysis.beats[state.song_beat_idx];
 		var next_beat = SongAnalysis.beats[state.song_beat_idx + 1];
 		if (curr_beat) {
@@ -300,6 +300,27 @@ var game = {
 					}, diff));
 				}
 				state.song_bar_idx++;
+			}
+		}
+
+		var curr_section = SongAnalysis.sections[state.song_section_idx];
+		var next_section = SongAnalysis.sections[state.song_section_idx + 1];
+		if (curr_section) {
+			if (curr_section.start*1000 < state.song_time_ms) {
+				state.song_section_idx++;
+			}
+			if (next_section && (next_section.start > curr_section.start)) {
+				var diff = next_section.start*1000 - state.song_time_ms;
+				if (next_section.confidence > 0.0) {
+					state.crazy_timeout.push(setTimeout(function () {
+							for (var j = 0; j < 10; j++) {
+								var enemyID = EntityManager.addShip({type: 'enemy', pos: {x: 2, y: 2}});
+								io.sockets.emit('make_objects', [{type: 'enemy', id: enemyID}]);
+								state.enemies[enemyID] = state.bodies[enemyID];
+							}
+					}, diff));
+				}
+				state.song_section_idx++;
 			}
 		}
 	},

@@ -41,7 +41,7 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio', 'audia'], function
 		},
 		registerInput: function () {
 
-			navigator.webkitGetUserMedia({audio:true, video:true}, function(stream){
+			navigator.webkitGetUserMedia({audio:true, video:false}, function(stream){
 			    var audioContext = new webkitAudioContext();
 			    var analyser = audioContext.createAnalyser();
 			    var microphone = audioContext.createMediaStreamSource(stream);
@@ -66,8 +66,9 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio', 'audia'], function
 
 			        var average = values / length;
 
-			        if (average >= 80) {
-			        	socket.emit("kill_enemies", true);
+			        var volMax = 90;
+			        if (average >= volMax) {
+			        	socket.emit("kill_enemies", average);
 			        }
 			    }
 			});
@@ -278,7 +279,7 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio', 'audia'], function
 		physicsUpdate: function () {
       // Client-side interpolation
       // TODO: RE-ENABLE ONCE FIXTURES ARE FIXED
-			// state.world.Step(1 / 60,  3,  3);
+			state.world.Step(1 / 60,  3,  3);
 		},
 		update: function () {
 			requestAnimationFrame(this.update.bind(this));
