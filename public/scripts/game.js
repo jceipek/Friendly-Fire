@@ -41,40 +41,6 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio', 'audia'], function
 		},
 		registerInput: function () {
 
-			navigator.webkitGetUserMedia({audio:true, video:false}, function(stream){
-			    var audioContext = new webkitAudioContext();
-			    var analyser = audioContext.createAnalyser();
-			    var microphone = audioContext.createMediaStreamSource(stream);
-			    var javascriptNode = audioContext.createJavaScriptNode(2048, 1, 1);
-
-			    analyser.smoothingTimeConstant = 0.3;
-			    analyser.fftSize = 1024;
-
-			    microphone.connect(analyser);
-			    analyser.connect(javascriptNode);
-			    javascriptNode.connect(audioContext.destination);
-
-			    javascriptNode.onaudioprocess = function() {
-			        var array =  new Uint8Array(analyser.frequencyBinCount);
-			        analyser.getByteFrequencyData(array);
-			        var values = 0;
-
-			        var length = array.length;
-			        for (var i = 0; i < length; i++) {
-			            values += array[i];
-			        }
-
-			        var average = values / length;
-
-			        var volMax = 90;
-			        if (average >= volMax) {
-			        	socket.emit("kill_enemies", average);
-			        }
-			    }
-			});
-
-
-
 			window.ontouchmove = function (e) {
 				var touch = e.targetTouches[0];
 				if (state.my_ship) {
