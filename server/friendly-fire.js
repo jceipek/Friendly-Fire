@@ -179,14 +179,6 @@ var game = {
 			setTimeout(function () {_g.removeObject(bullet_id);}, 5000);
 			io.sockets.emit('make_objects', [{type: 'bullet', id: bullet_id}]);
 		});
-		socket.on('kill_enemies', function (volume) {
-			console.log(volume);
-			for (var enemy_idx in state.enemies) {
-				if (state.enemies.hasOwnProperty(enemy_idx)) {
-					state.to_delete.push(enemy_idx);
-				}
-			}
-		});
 	},
 	initNetwork: function (server) {
 		var _g = this;
