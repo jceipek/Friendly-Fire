@@ -26,14 +26,17 @@ var io = null;
 
 var game = {
 	init: function (server) {
+		// set up websocket
 		this.initNetwork(server);
+
+		// set up box2d
 		var gravity = new Box2D.Common.Math.b2Vec2(0, 0);
 		state.world = new Box2D.Dynamics.b2World(gravity,  true);
 		var listener = new Box2D.Dynamics.b2ContactListener;
-		var _g = this;
 		listener.BeginContact = this.onContact;
 		state.world.SetContactListener(listener);
 
+		// TODO: refactor entitymanager
 		EntityManager.initWithState(state);
 
 		setInterval(this.step.bind(this), UPDATE_INTERVAL * 1000);
@@ -41,18 +44,6 @@ var game = {
 
 
 		state.song_start_time = (new Date()).getTime();
-
-		for (var i = 0; i < 3; i++) {//SongAnalysis.beats.length; i++) {
-			var beat = SongAnalysis.beats[i];
-			setTimeout(function () {
-				console.log("BEAT");
-				var enemyID = EntityManager.addShip({type: 'enemy', pos: {x: 2, y: 2}});
-				io.sockets.emit('make_objects', [{type: 'enemy', id: enemyID}]);
-				state.enemies[enemyID] = state.bodies[enemyID];
-			}, beat.start*1000);
-		}
-
-		// console.log(SongAnalysis.beats);
 	},
 	jumpMusicBack: function (time) {
 		if ((new Date()).getTime() - state.last_jump_back < 2000) {
