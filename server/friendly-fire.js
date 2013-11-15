@@ -84,30 +84,6 @@ var game = {
 
 		state.song_start_time = (new Date()).getTime();
 
-		// for (var i = 0; i < 3; i++) {
-		// 	var enemyID = EntityManager.addShip({type: 'enemy', pos: {x: 2, y: 2}});
-		// 	io.sockets.emit('make_objects', [{type: 'enemy', id: enemyID}]);
-		// 	state.enemies[enemyID] = state.bodies[enemyID];
-		// }
-		// for (var i = 0; i < SongAnalysis.beats.length; i++) {
-		// 	var beat = SongAnalysis.beats[i];
-		// 	setTimeout(function () {
-		// 		console.log("BEAT");
-		// 		// _g.fireAI(this);
-		// 	}, beat.start*1000);
-		// }
-		// for (var i = 0; i < SongAnalysis.bars.length; i++) {
-		// 	var bar = SongAnalysis.bars[i];
-		// 	if (bar.confidence > 0.1) {
-		// 			setTimeout(function () {
-		// 				// console.log("BAR");
-		// 				var enemyID = EntityManager.addShip({type: 'enemy', pos: {x: 2, y: 2}});
-		// 				io.sockets.emit('make_objects', [{type: 'enemy', id: enemyID}]);
-		// 				state.enemies[enemyID] = state.bodies[enemyID];
-		// 			}, bar.start*1000);
-		// 	}
-		// }
-
 		for (var i = 0; i < 3; i++) {//SongAnalysis.beats.length; i++) {
 			var beat = SongAnalysis.beats[i];
 			setTimeout(function () {
