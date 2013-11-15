@@ -6,8 +6,6 @@ var SongAnalysis = require('./helix');
 
 const ARTIFICIAL_LATENCY_FACTOR = 1; // Make it 1 for no fake latency
 const UPDATE_INTERVAL = 1/60;
-//const STAGE_WIDTH = 1000; // px
-//const STAGE_HEIGHT = 900; // px
 var state = {
 	world: null,
 	bodies: {}, // instances of b2Body (from Box2D)
@@ -36,45 +34,44 @@ var game = {
 		listener.BeginContact = function (contact) {
 			var entity1 = contact.GetFixtureA().GetBody().GetUserData();
 			var entity2 = contact.GetFixtureB().GetBody().GetUserData();
+			var entities = [entity1, entity2];
+
 			// bullet class is by whom the shot was fired
 
 			if (entity1.entity_type === 'bullet' &&
 				  entity1.bullet_class === 'enemy' &&
 				  entity2.entity_type === 'avenger') {
-				// console.log("JUMP BACK");
-					//_g.jumpMusicBack(-2000);
 			}
 
 			if (entity2.entity_type === 'bullet' &&
 				  entity2.bullet_class === 'enemy' &&
 				  entity1.entity_type === 'avenger') {
-				// console.log("JUMP BACK");
-					//_g.jumpMusicBack(-2000);
 			}
 
 			if (entity2.entity_type === 'bullet' &&
 				entity2.bullet_class === 'enemy') {
-				state.to_delete.push(entity2.id);
-				// _g.removeObject(entity2.id);
 			}
 
 			if (entity1.entity_type === 'bullet' &&
 				entity1.bullet_class === 'enemy') {
-				// _g.removeObject(entity1.id);
-				state.to_delete.push(entity1.id);
 			}
 
 			if (entity1.entity_type === 'bullet' &&
 				  entity1.bullet_class === 'player' &&
 				  entity2.entity_type === 'enemy') {
-				// _g.removeObject(entity2.id);
 				state.to_delete.push(entity2.id);
 			}
 			if (entity2.entity_type === 'bullet' &&
 				entity2.bullet_class === 'player' &&
 				entity1.entity_type === 'enemy') {
-				//_g.removeObject(entity1.id);
 				state.to_delete.push(entity1.id);
+			}
+
+			var i;
+			for (i = 0; i < entities.length; i++) {
+				if (entities[i].entity_type === 'bullet') {
+					state.to_delete.push(entities[i].id);
+				}
 			}
 		};
 		state.world.SetContactListener(listener);
@@ -344,7 +341,6 @@ var game = {
 				target.Add(offset);
 
 				if (state.bodies[enemy_idx]) {
-					//console.log("setting destination to: (" + target.x + ", " + target.y  + ")");
 					state.bodies[enemy_idx].destination = target;
 
 					var dest = state.bodies[enemy_idx].destination;
@@ -353,26 +349,6 @@ var game = {
 					toDest.Normalize();
 					var dir = state.bodies[enemy_idx].GetLinearVelocity().Copy();
 					dir.Normalize();
-					// var dotp = dir.x * toDest.x + dir.y * toDest.y;
-					// var angle = Math.acos(dotp);
-					// var fov = 0.349;
-
-					// var fireDelta = 500;
-					// if (Math.abs(angle) < fov) {
-					// 	var now = (new Date()).getTime();
-					// 	if (!enemy_body.lastfiredTime || (now - enemy_body.lastfiredTime) >= fireDelta) {
-					// 		enemy_body.lastfiredTime = now;
-					// 		var bullet_id = EntityManager.addBullet({pos: {x: pos.x, y: pos.y},
-					// 			                                       angle: state.bodies[enemy_idx].GetAngle(),
-					// 			                                       ship_vel: state.bodies[enemy_idx].GetLinearVelocity(),
-					// 			                                       bullet_speed: 15,
-					// 			                                     	 bullet_class: 'enemy'});
-					// 		var t = this;
-					// 		setTimeout(function (bullet_id) {t.removeObject(bullet_id);}, 2000, [bullet_id]);
-					// 		//setTimeout(function () {t.removeObject(bullet_id);}, 5000); // Crashes for some strange version
-					// 		io.sockets.emit('make_objects', [{type: 'bullet', id: bullet_id}]);
-					// 	}
-					// }
 				}
 
 			}
