@@ -48,53 +48,62 @@ var game = {
 		var _g = this;
 		var player = state.players[socket.id];
 		var ship = state.bodies[player.ship_id];
+
 		socket.on('set_destination', function (destination) {
 			player.destination = destination;
 		});
+
 		socket.on('fire', function (time) {
 			var pos = ship.GetPosition();
-			var bullet_id = EntityManager.addBullet({pos: {x: pos.x, y: pos.y},
-																					     angle: ship.GetAngle(),
-																					     ship_vel: ship.GetLinearVelocity(),
-																					     bullet_speed: 10,
-																					   	 bullet_class: 'player'});
+			var bullet_params = {
+				pos: {x: pos.x, y: pos.y},
+				angle: ship.GetAngle(),
+				ship_vel: ship.GetLinearVelocity(),
+				bullet_speed: 10,
+				bullet_class: 'player'
+			};
+
+			// TODO: entity manager tells clients to create object
+			var bullet_id = EntityManager.addBullet(bullet_params);
 			setTimeout(function () {_g.removeObject(bullet_id);}, 5000);
 			io.sockets.emit('make_objects', [{type: 'bullet', id: bullet_id}]);
 		});
 	},
 	initNetwork: function (server) {
-		var _g = this;
 		io = socketio.listen(server);
 		io.set('log level', 1);
-		io.sockets.on('connection', function (new_socket) {
-			console.log("Connection: ", new_socket.id);
-			var ship_type = 'avenger';
-			var other_objects = [];
-			for (var obj_idx in state.bodies) {
-				if (state.bodies.hasOwnProperty(obj_idx)) {
-					var obj = state.bodies[obj_idx];
-					other_objects.push({type: obj.GetUserData().entity_type, id: obj_idx});
-				}
+		io.sockets.on('connection', this.createPlayer.bind(this));
+	},
+	createPlayer: function (new_socket) {
+		var _g = this;
+		console.log("Connection: ", new_socket.id);
+		var ship_type = 'avenger';
+		var other_objects = [];
+		for (var obj_idx in state.bodies) {
+			if (state.bodies.hasOwnProperty(obj_idx)) {
+				var obj = state.bodies[obj_idx];
+				other_objects.push({type: obj.GetUserData().entity_type, id: obj_idx});
 			}
-			// To new player: create objects that exist on the server
-			new_socket.emit('make_objects', other_objects);
-			var ship_id = EntityManager.addShip();
-			state.players[new_socket.id] = { socket: new_socket, type: ship_type, ship_id: ship_id };
+		}
+		// To new player: create objects that exist on the server
+		new_socket.emit('make_objects', other_objects);
+		var ship_id = EntityManager.addShip();
+		state.players[new_socket.id] = { socket: new_socket, type: ship_type, ship_id: ship_id };
 
-			// To new player: sync song playback time
-			new_socket.emit('set_song_time', state.song_time_ms);
+		// To new player: sync song playback time
+		new_socket.emit('set_song_time', state.song_time_ms);
 
-			// To everyone: create a new ship for the new player
-			io.sockets.emit('make_objects', [{type: ship_type, id: ship_id}]);
+		// To everyone: create a new ship for the new player
+		io.sockets.emit('make_objects', [{type: ship_type, id: ship_id}]);
 
-			// To new player: assign control of the new ship
-			new_socket.emit('assign_ship', ship_id);
-			_g.initInputHandling(new_socket);
-			new_socket.on('disconnect', function () {
-				console.log("Disconnect: ", new_socket.id);
-				_g.removeObject(state.players[new_socket.id].ship_id);
-				delete state.players[new_socket.id];
-			});
+		// To new player: assign control of the new ship
+		new_socket.emit('assign_ship', ship_id);
+		_g.initInputHandling(new_socket);
+
+		new_socket.on('disconnect', function () {
+			console.log("Disconnect: ", new_socket.id);
+			_g.removeObject(state.players[new_socket.id].ship_id);
+			delete state.players[new_socket.id];
 		});
 	},
 	sync: function () {
