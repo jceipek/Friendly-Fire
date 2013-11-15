@@ -214,45 +214,43 @@ var game = {
 		}
 	},
 	stepAI: function () {
+		var min_distance;
+		var distance;
+		var player_position;
+		var enemy_position;
+		var enemy_body;
+		var target = null;
 
 		for (var enemy_idx in state.enemies) {
 			if (state.enemies.hasOwnProperty(enemy_idx)) {
-				var enemy_body = state.enemies[enemy_idx];
-				var pos = enemy_body.GetPosition();
-
-				var target = null;
-
+				enemy_body = state.enemies[enemy_idx];
+				enemy_position = enemy_body.GetPosition();
+				min_distance = 10000;
 				// TODO: Fix bug. Shuold get the closest player but right now just
 				// gets an arbitrary player.
+
 				for (var player_idx in state.players) {
 					if (state.players.hasOwnProperty(player_idx)) {
 						var player = state.players[player_idx];
 						if (state.bodies[player.ship_id]) {
-							target = state.bodies[player.ship_id].GetPosition().Copy();
+							player_position = state.bodies[player.ship_id].GetPosition().Copy();
+							distance = Math.sqrt(
+								Math.pow(player_position.x - enemy_position.x, 2)
+								+ Math.pow(player_position.y - enemy_position.y, 2)
+							)
+							if (distance < min_distance) {
+								min_distance = distance;
+								target = player_position;
+							}
 						}
 					}
 				}
 
-				if (!target) target = pos.Copy();
-
-				var distanceOffset = 10;
-				var offset = new Box2D.Common.Math.b2Vec2(target.x, target.y);
-				offset.Subtract(pos);
-				offset.Normalize();
-				offset.Multiply(-1 /* distanceOffset*/);
-				target.Add(offset);
-
-				if (state.bodies[enemy_idx]) {
-					state.bodies[enemy_idx].destination = target;
-
-					var dest = state.bodies[enemy_idx].destination;
-					var toDest = dest.Copy();
-				   	toDest.Subtract(pos);
-					toDest.Normalize();
-					var dir = state.bodies[enemy_idx].GetLinearVelocity().Copy();
-					dir.Normalize();
+				if (!target) {
+					target = enemy_position.Copy();
 				}
 
+				enemy_body.destination = target;
 			}
 		}
 	},
