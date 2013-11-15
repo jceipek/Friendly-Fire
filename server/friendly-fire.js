@@ -42,47 +42,7 @@ var game = {
 		setInterval(this.step.bind(this), UPDATE_INTERVAL * 1000);
 		setInterval(this.sync.bind(this), UPDATE_INTERVAL * 1000 * ARTIFICIAL_LATENCY_FACTOR);
 
-
 		state.song_start_time = (new Date()).getTime();
-	},
-	jumpMusicBack: function (time) {
-		if ((new Date()).getTime() - state.last_jump_back < 2000) {
-			//console.log("Avoid jumpback");
-			return;
-		}
-
-		state.last_jump_back = (new Date()).getTime();
-		while (state.crazy_timeout.length > 0) {
-			clearInterval(state.crazy_timeout.pop());
-		}
-
-		state.song_start_time -= time;
-		state.song_time_ms -= time;
-		io.sockets.emit('set_song_time', state.song_time_ms);
-		for (var i = 0; i < SongAnalysis.bars.length; i++) {
-			if (SongAnalysis.bars[i].start * 1000 > state.song_time_ms) {
-				state.song_bar_idx = i;
-				break;
-			}
-		}
-		for (var i = 0; i < SongAnalysis.beats.length; i++) {
-			if (SongAnalysis.beats[i].start * 1000 > state.song_time_ms) {
-				state.song_beat_idx = i;
-				break;
-			}
-		}
-		for (var i = 0; i < SongAnalysis.sections.length; i++) {
-			if (SongAnalysis.sections[i].start * 1000 > state.song_time_ms) {
-				state.song_section_idx = i;
-				break;
-			}
-		}
-		for (var i = 0; i < SongAnalysis.segments.length; i++) {
-			if (SongAnalysis.segments[i].start * 1000 > state.song_time_ms) {
-				state.song_segment_idx = i;
-				break;
-			}
-		}
 	},
 	initInputHandling: function (socket) {
 		var _g = this;
