@@ -31,49 +31,7 @@ var game = {
 		state.world = new Box2D.Dynamics.b2World(gravity,  true);
 		var listener = new Box2D.Dynamics.b2ContactListener;
 		var _g = this;
-		listener.BeginContact = function (contact) {
-			var entity1 = contact.GetFixtureA().GetBody().GetUserData();
-			var entity2 = contact.GetFixtureB().GetBody().GetUserData();
-			var entities = [entity1, entity2];
-
-			// bullet class is by whom the shot was fired
-
-			if (entity1.entity_type === 'bullet' &&
-				  entity1.bullet_class === 'enemy' &&
-				  entity2.entity_type === 'avenger') {
-			}
-
-			if (entity2.entity_type === 'bullet' &&
-				  entity2.bullet_class === 'enemy' &&
-				  entity1.entity_type === 'avenger') {
-			}
-
-			if (entity2.entity_type === 'bullet' &&
-				entity2.bullet_class === 'enemy') {
-			}
-
-			if (entity1.entity_type === 'bullet' &&
-				entity1.bullet_class === 'enemy') {
-			}
-
-			if (entity1.entity_type === 'bullet' &&
-				  entity1.bullet_class === 'player' &&
-				  entity2.entity_type === 'enemy') {
-				state.to_delete.push(entity2.id);
-			}
-			if (entity2.entity_type === 'bullet' &&
-				entity2.bullet_class === 'player' &&
-				entity1.entity_type === 'enemy') {
-				state.to_delete.push(entity1.id);
-			}
-
-			var i;
-			for (i = 0; i < entities.length; i++) {
-				if (entities[i].entity_type === 'bullet') {
-					state.to_delete.push(entities[i].id);
-				}
-			}
-		};
+		listener.BeginContact = this.onContact;
 		state.world.SetContactListener(listener);
 
 		EntityManager.initWithState(state);
@@ -376,6 +334,49 @@ var game = {
 			ship.ApplyTorque(total_rotation < 0 ? -10 : 10);
 			if (adjust_angle) {ship.SetAngle(des_angle);
 								ship.ApplyForce(vec, ship.GetWorldCenter());}
+		}
+	},
+	onContact: function (contact) {
+		var entity1 = contact.GetFixtureA().GetBody().GetUserData();
+		var entity2 = contact.GetFixtureB().GetBody().GetUserData();
+		var entities = [entity1, entity2];
+
+		// bullet class is by whom the shot was fired
+
+		if (entity1.entity_type === 'bullet' &&
+			entity1.bullet_class === 'enemy' &&
+			entity2.entity_type === 'avenger') {
+		}
+
+		if (entity2.entity_type === 'bullet' &&
+			  entity2.bullet_class === 'enemy' &&
+			  entity1.entity_type === 'avenger') {
+		}
+
+		if (entity2.entity_type === 'bullet' &&
+			entity2.bullet_class === 'enemy') {
+		}
+
+		if (entity1.entity_type === 'bullet' &&
+			entity1.bullet_class === 'enemy') {
+		}
+
+		if (entity1.entity_type === 'bullet' &&
+			  entity1.bullet_class === 'player' &&
+			  entity2.entity_type === 'enemy') {
+			state.to_delete.push(entity2.id);
+		}
+		if (entity2.entity_type === 'bullet' &&
+			entity2.bullet_class === 'player' &&
+			entity1.entity_type === 'enemy') {
+			state.to_delete.push(entity1.id);
+		}
+
+		var i;
+		for (i = 0; i < entities.length; i++) {
+			if (entities[i].entity_type === 'bullet') {
+				state.to_delete.push(entities[i].id);
+			}
 		}
 	}
 };
