@@ -8,7 +8,13 @@ const ARTIFICIAL_LATENCY_FACTOR = 1; // Make it 1 for no fake latency
 const UPDATE_INTERVAL = 1/60;
 var state = {
 	world: null,
+	// TODO: duplicate code with managing bodies and enemies and players
+	// need to remember to delete a body when you delete a player
+	// need to remember to delete a body when you delete an enemy
+	// somehow combine bodies, players, enemies, logically
 	bodies: {}, // instances of b2Body (from Box2D)
+
+	// TODO: right now each player has only one body, but some ships may have multiple bodies
 	players: {},
 	enemies: {},
 	song_start_time: 0,
@@ -216,6 +222,8 @@ var game = {
 
 				var target = null;
 
+				// TODO: Fix bug. Shuold get the closest player but right now just
+				// gets an arbitrary player.
 				for (var player_idx in state.players) {
 					if (state.players.hasOwnProperty(player_idx)) {
 						var player = state.players[player_idx];

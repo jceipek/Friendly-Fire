@@ -23,6 +23,10 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio', 'audia'], function
 
 	var socket = null;
 
+// keeping client side prediction is easy, but
+// TODO: don't create fixtures, only keep track of force,
+// velocity, angle, etc.
+
 	var game = {
 
 		init: function () {
@@ -178,7 +182,16 @@ define(['zepto', 'pixi', 'box2d', 'helpers/math', 'socketio', 'audia'], function
 			definitions.circleFixture.density = 1;
 			definitions.circleFixture.restitution = 0.7;
 		},
+		// TODO: server has an entity creator, but client has
+		// addShip and addBullet.
+		// some duplicate code between client and server
 		addShip: function (id, params) {
+			// TODO: avenger is default ship
+			// we need to figure out how to add an arbitrary
+			// type of ship, based on an input.
+			// it should be able to run a different function for each
+			// type of ship.
+			// Ship constructor function for each type of ship
 			params = params || {};
 			var pos = params.pos || {x: 0, y: 0},
 				type = params.type || 'avenger',
